@@ -15,5 +15,4 @@ public class itemResponse {
     private String category;
     private String isAvailable ;
 
-
 }
