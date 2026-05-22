@@ -35,7 +35,7 @@ public class menuManager{
     }
 
     @PutMapping(value="/staff/item/{id}")
-    public ResponseEntity<String> updateItem( @Valid @PathVariable Integer id , @RequestBody itemRequest itemRequest){
+    public ResponseEntity<String> updateItem(  @PathVariable Integer id , @Valid @RequestBody itemRequest itemRequest){
         return ResponseEntity.ok(itemService.updateItem(id,itemRequest));
     }
 
