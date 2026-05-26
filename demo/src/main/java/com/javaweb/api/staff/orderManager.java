@@ -15,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class orderManager {
 
-    private final orderService orderService; // duy an cuwst
+    private final orderService orderService;
 
     @GetMapping(value="staff/orders")
     public List<orderResponse> findOrders(@RequestParam Map<String, Object> Params) {

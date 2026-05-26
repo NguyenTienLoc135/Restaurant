@@ -29,6 +29,12 @@ public class userServiceImpl  implements userService {
     @Transactional
     @Override
     public String login(userLoginRequest userLoginRequest){
+        if(userLoginRequest.getUsername()==null || userLoginRequest.getUsername().trim().equals("")){
+            throw new NullPointerException("tên đăng nhap không được để trống");
+        }
+        if(userLoginRequest.getPassword()==null || userLoginRequest.getPassword().trim().equals("")){
+            throw new NullPointerException("mật khau khong được để trong");
+        }
         var user = userRepository.findByUsername(userLoginRequest.getUsername())
                 .orElseThrow(()-> new BadCredentialsException("sai tên đăng nhập hoặc mật khẩu"));
         if(!passwordEncoder.matches(userLoginRequest.getPassword(), user.getPassword())){
