@@ -5,7 +5,12 @@ import com.javaweb.entity.User;
 import com.javaweb.model.request.UserRegisterRequest;
 import com.javaweb.model.request.userLoginRequest;
 import com.javaweb.service.userService;
+import com.javaweb.utils.JwtTokenProvider;
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.NonFinal;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -15,6 +20,10 @@ import com.javaweb.repository.userRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+
 import static com.javaweb.enums.UserIsActive.ACTIVE;
 import static com.javaweb.enums.UserIsActive.INACTIVE;
 import static com.javaweb.enums.UserRole.CUSTOMER;
@@ -22,6 +31,9 @@ import static com.javaweb.enums.UserRole.CUSTOMER;
 @Service
 @RequiredArgsConstructor
 public class userServiceImpl  implements userService {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
     private final userRepository userRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
@@ -43,7 +55,8 @@ public class userServiceImpl  implements userService {
         if(user.getUserIsActive().equals(INACTIVE)){
             throw new DisabledException(" tài khoản không hoạt động");
         }
-        return "ok";
+        var token = jwtTokenProvider.generateToken(user);
+        return token;
     }
 
     @Transactional
@@ -76,5 +89,7 @@ public class userServiceImpl  implements userService {
         userRepository.save(user);
         return "ok";
     }
+
+
 
 }

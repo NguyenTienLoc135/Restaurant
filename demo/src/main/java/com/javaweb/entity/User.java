@@ -1,5 +1,6 @@
 package com.javaweb.entity;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import com.javaweb.enums.UserGender;
 import com.javaweb.enums.UserIsActive;
@@ -63,6 +64,8 @@ public class User implements UserDetails{
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.UserRole.name()));
     }
+
+
 }
