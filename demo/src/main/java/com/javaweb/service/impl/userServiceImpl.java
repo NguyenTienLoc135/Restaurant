@@ -4,25 +4,24 @@ import com.javaweb.customExceptions.ConflictException;
 import com.javaweb.entity.User;
 import com.javaweb.model.request.UserRegisterRequest;
 import com.javaweb.model.request.userLoginRequest;
+import com.javaweb.model.response.userResponse;
 import com.javaweb.service.userService;
 import com.javaweb.utils.JwtTokenProvider;
-import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.NonFinal;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.javaweb.repository.userRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.javaweb.enums.UserIsActive.ACTIVE;
 import static com.javaweb.enums.UserIsActive.INACTIVE;
@@ -37,6 +36,7 @@ public class userServiceImpl  implements userService {
     private final userRepository userRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     @Transactional
     @Override
@@ -47,11 +47,14 @@ public class userServiceImpl  implements userService {
         if(userLoginRequest.getPassword()==null || userLoginRequest.getPassword().trim().equals("")){
             throw new NullPointerException("mật khau khong được để trong");
         }
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        userLoginRequest.getUsername(),
+                        userLoginRequest.getPassword()
+                )
+        );
         var user = userRepository.findByUsername(userLoginRequest.getUsername())
-                .orElseThrow(()-> new BadCredentialsException("sai tên đăng nhập hoặc mật khẩu"));
-        if(!passwordEncoder.matches(userLoginRequest.getPassword(), user.getPassword())){
-            throw new BadCredentialsException("sai tên đăng nhập hoặc mật khẩu");
-        }
+                .orElseThrow(() -> new BadCredentialsException("sai tên đăng nhập hoặc mật khẩu"));
         if(user.getUserIsActive().equals(INACTIVE)){
             throw new DisabledException(" tài khoản không hoạt động");
         }
@@ -90,6 +93,19 @@ public class userServiceImpl  implements userService {
         return "ok";
     }
 
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @Override
+    public List<userResponse> findUser(){
+        List<User> users = userRepository.findAll();
+        List<userResponse> userResponseList = new ArrayList<>();
+        for(User user : users){
+            userResponseList.add(modelMapper.map(user,userResponse.class));
+        }
+        return userResponseList;
+    }
+
 
 
 }
+

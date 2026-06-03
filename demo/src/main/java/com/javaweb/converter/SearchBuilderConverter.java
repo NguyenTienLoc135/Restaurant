@@ -1,5 +1,6 @@
 package com.javaweb.converter;
 
+import com.javaweb.builder.BookingSearchBuilder;
 import com.javaweb.builder.ItemSearchBuilder;
 import com.javaweb.builder.OrderSearchBuilder;
 import com.javaweb.utils.MapUtil;
@@ -14,7 +15,6 @@ public class SearchBuilderConverter {
 
     public ItemSearchBuilder toItemSearchBuilder(Map<String,Object> params) {
         ItemSearchBuilder.Builder builder = new ItemSearchBuilder.Builder();
-
         builder.setName(MapUtil.getObject(params, "name", String.class));
         builder.setCategory(MapUtil.getObject(params, "category", String.class));
         builder.setLeftPrice(MapUtil.getObject(params, "leftPrice", BigDecimal.class));
@@ -30,6 +30,13 @@ public class SearchBuilderConverter {
         builder.setStatus(MapUtil.getObject(params, "status", String.class));
         builder.setFromDate(MapUtil.getObject(params, "fromDate", LocalDate.class));
         builder.setToDate(MapUtil.getObject(params, "toDate", LocalDate.class));
+        return builder.build();
+   }
+
+   public BookingSearchBuilder toBookingSearchBuilder(Map<String,Object> params){
+        BookingSearchBuilder.Builder builder = new BookingSearchBuilder.Builder();
+        builder.setUserId(MapUtil.getObject(params, "userId", Integer.class));
+        builder.setBookingDate(MapUtil.getObject(params, "bookingDate", LocalDate.class));
         return builder.build();
    }
 }

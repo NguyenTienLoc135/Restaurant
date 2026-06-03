@@ -4,14 +4,18 @@ import com.javaweb.builder.OrderSearchBuilder;
 import com.javaweb.converter.SearchBuilderConverter;
 import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.entity.Order;
+import com.javaweb.entity.User;
 import com.javaweb.enums.OrderStatus;
 import com.javaweb.model.response.orderResponse;
+import com.javaweb.model.response.userResponse;
 import com.javaweb.repository.orderRepository;
+import com.javaweb.repository.userRepository;
 import com.javaweb.service.orderService;
 import com.javaweb.specification.OrderSpecs;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,6 +31,7 @@ public class orderServiceImpl implements orderService {
 
 
     @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
     public List<orderResponse> findOrders(Map<String, Object> Params) {
         OrderSearchBuilder orderSearchBuilder = searchBuilderConverter.toOrderSearchBuilder(Params);
@@ -43,6 +48,7 @@ public class orderServiceImpl implements orderService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
     public String updateOrderStatus(Integer Id, OrderStatus status) {
         Order e =orderRepository.findById(Id).orElseThrow();
@@ -50,5 +56,7 @@ public class orderServiceImpl implements orderService {
         orderRepository.save(e);
         return "cập nhat thành công";
     }
+
+
 
 }

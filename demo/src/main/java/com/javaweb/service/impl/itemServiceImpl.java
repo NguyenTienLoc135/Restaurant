@@ -10,6 +10,7 @@ import com.javaweb.service.itemService;
 import com.javaweb.specification.ItemSpecs;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import com.javaweb.repository.itemRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class itemServiceImpl implements itemService {
             return itemResponse;
     }
 
+    @PreAuthorize("permitAll()")
     @Override
     public List<itemResponse> searchItems(Map<String, Object> params){
         ItemSearchBuilder itemSearchBuilder = itemSearchBuilderConverter.toItemSearchBuilder(params);// chuyen param ve 1 searchBuilder
@@ -47,6 +49,7 @@ public class itemServiceImpl implements itemService {
     }
 
     @Transactional
+    @PreAuthorize("permitAll()")
     @Override
     public itemResponse findItem(Integer id){
         Item itemEntity = itemRepository.findById(id).orElse(null);
@@ -54,6 +57,7 @@ public class itemServiceImpl implements itemService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
     public String insertItem(itemRequest itemRequest){
         Item itemEntity = new Item();
@@ -77,6 +81,7 @@ public class itemServiceImpl implements itemService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
     public String updateItem(Integer id, itemRequest itemRequest){
         Item itemEntity = itemRepository.findById(id).orElseThrow();
@@ -100,6 +105,7 @@ public class itemServiceImpl implements itemService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
     public String deleteItem(Integer id){
         Item itemEntity = itemRepository.findById(id).orElseThrow();
