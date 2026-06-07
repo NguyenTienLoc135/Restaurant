@@ -1,5 +1,6 @@
 package com.javaweb.service;
 
+import com.javaweb.enums.UserIsActive;
 import com.javaweb.model.request.UserRegisterRequest;
 import com.javaweb.model.request.userLoginRequest;
 import com.javaweb.model.response.userResponse;
@@ -18,4 +19,12 @@ public interface userService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     List<userResponse> findUser();
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    List<userResponse> findAll();
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    String banUser(Integer id, UserIsActive userIsActive);
 }

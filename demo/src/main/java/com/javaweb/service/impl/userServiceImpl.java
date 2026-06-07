@@ -2,6 +2,7 @@ package com.javaweb.service.impl;
 
 import com.javaweb.customExceptions.ConflictException;
 import com.javaweb.entity.User;
+import com.javaweb.enums.UserIsActive;
 import com.javaweb.model.request.UserRegisterRequest;
 import com.javaweb.model.request.userLoginRequest;
 import com.javaweb.model.response.userResponse;
@@ -96,7 +97,7 @@ public class userServiceImpl  implements userService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
-    public List<userResponse> findUser(){
+    public List<userResponse> findAll(){
         List<User> users = userRepository.findAll();
         List<userResponse> userResponseList = new ArrayList<>();
         for(User user : users){
@@ -105,7 +106,15 @@ public class userServiceImpl  implements userService {
         return userResponseList;
     }
 
-
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @Override
+    public String banUser(Integer id, UserIsActive userIsActive){
+        User user = userRepository.findById(id).orElseThrow();
+        user.setUserIsActive(userIsActive);
+        userRepository.save(user);
+        return "ok";
+    }
 
 }
 
