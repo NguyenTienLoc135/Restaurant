@@ -24,11 +24,6 @@ public class menuManager{
         return itemService.searchItems(params);
     }
 
-    @GetMapping(value="/staff/item/{id}")
-    public itemResponse findItem(@PathVariable Integer id){
-        return itemService.findItem(id);
-    }
-
     @PostMapping(value="/staff/item")
     public ResponseEntity<String> insertItem( @Valid @RequestBody itemRequest itemRequest){
         return ResponseEntity.ok(itemService.insertItem(itemRequest));
@@ -43,8 +38,6 @@ public class menuManager{
     public ResponseEntity<String> deleteItem( @PathVariable Integer id){
         return ResponseEntity.ok(itemService.deleteItem(id));
     }
-
-
 
 
 

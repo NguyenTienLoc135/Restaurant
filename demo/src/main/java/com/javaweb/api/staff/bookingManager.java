@@ -20,11 +20,6 @@ public class bookingManager {
         return  bookingService.bookingList(params);
     }
 
-    @GetMapping(value="/bookings/me")
-    public List<bookingResponse> myBooking() {
-        return  bookingService.myBooking();
-    }
-
     @PutMapping(value="/booking/{id}")
     public ResponseEntity<String> booking(@PathVariable Integer id, BookingStatus bookingStatus) {
         return ResponseEntity.ok(bookingService.updateBooking(id, bookingStatus));

@@ -7,10 +7,12 @@ import com.javaweb.entity.Booking;
 import com.javaweb.enums.BookingStatus;
 import com.javaweb.model.response.bookingResponse;
 import com.javaweb.repository.bookingRepository;
+import com.javaweb.security.CurrentUserProvider;
 import com.javaweb.service.bookingService;
 import com.javaweb.specification.BookingSpecs;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ public class bookingServiceImpl implements bookingService {
     private final bookingRepository bookingRepository;
     private final SearchBuilderConverter  searchBuilderConverter;
     private final ModelMapper modelMapper;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional
     @Override
@@ -56,8 +59,10 @@ public class bookingServiceImpl implements bookingService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     @Override
-    public List<bookingResponse> myBooking(){
-        List<Booking> bookingList = bookingRepository.findAll();
+    public List<bookingResponse> myBookingHistory(){
+        Integer userId = currentUserProvider.getCurrentUserId()
+                .orElseThrow(() -> new AccessDeniedException("Unauthenticated"));
+        List<Booking> bookingList = bookingRepository.findByUserId(userId);
         if(bookingList.isEmpty()){
             throw new DataNotFoundException("not found");
         }

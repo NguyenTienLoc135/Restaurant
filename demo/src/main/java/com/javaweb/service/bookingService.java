@@ -17,7 +17,8 @@ public interface bookingService {
     @Transactional
     String updateBooking(Integer id, BookingStatus bookingStatus);
 
+
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
-    List<bookingResponse> myBooking();
+    List<bookingResponse> myBookingHistory();
 }

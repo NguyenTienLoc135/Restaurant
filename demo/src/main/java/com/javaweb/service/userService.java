@@ -18,10 +18,6 @@ public interface userService {
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
-    List<userResponse> findUser();
-
-    @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
     List<userResponse> findAll();
 
     @Transactional

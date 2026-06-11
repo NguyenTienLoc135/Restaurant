@@ -39,6 +39,4 @@ public class publicController {
         return itemService.findItem(id);
     }
 
-
-
 }

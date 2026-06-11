@@ -17,4 +17,5 @@ public class orderResponse {
     private BigDecimal totalPrice;
     private BigDecimal deliveryFee;
     private String status;
+
 }
