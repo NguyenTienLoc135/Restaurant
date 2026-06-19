@@ -1,24 +1,24 @@
 package com.javaweb.service;
 
 import com.javaweb.enums.UserIsActive;
-import com.javaweb.model.request.UserRegisterRequest;
-import com.javaweb.model.request.userLoginRequest;
-import com.javaweb.model.response.userResponse;
+import com.javaweb.model.request.UserRequest;
+import com.javaweb.model.request.UserLoginRequest;
+import com.javaweb.model.response.UserResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface userService {
+public interface UserService {
     @Transactional
-    String login(userLoginRequest userLoginRequest);
+    String login(UserLoginRequest userLoginRequest);
 
     @Transactional
-    String Register(UserRegisterRequest userRegisterRequest);
+    String Register(UserRequest userRegisterRequest);
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
-    List<userResponse> findAll();
+    List<UserResponse> findAll();
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")

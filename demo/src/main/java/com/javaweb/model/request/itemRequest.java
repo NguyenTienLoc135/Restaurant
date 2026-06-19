@@ -6,12 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.constraints.NotBlank;
 
-
-import java.math.BigDecimal;
-
 @Getter
 @Setter
-public class itemRequest {
+public class ItemRequest {
     private Integer id;
     @NotBlank(message="tên món không được để trống")
     private String name ;

@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UserRegisterRequest {
+public class UserRequest {
     @NotBlank(message = "tên khong đuợc để trống")
     private String fullname;
     @NotBlank(message = "tên tài khoản không được để trong")

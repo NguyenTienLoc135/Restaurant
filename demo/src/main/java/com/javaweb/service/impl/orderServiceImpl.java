@@ -4,13 +4,10 @@ import com.javaweb.builder.OrderSearchBuilder;
 import com.javaweb.converter.SearchBuilderConverter;
 import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.entity.Order;
-import com.javaweb.entity.User;
 import com.javaweb.enums.OrderStatus;
-import com.javaweb.model.response.orderResponse;
-import com.javaweb.model.response.userResponse;
-import com.javaweb.repository.orderRepository;
-import com.javaweb.repository.userRepository;
-import com.javaweb.service.orderService;
+import com.javaweb.model.response.OrderResponse;
+import com.javaweb.repository.OrderRepository;
+import com.javaweb.service.OrderService;
 import com.javaweb.specification.OrderSpecs;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +21,8 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class orderServiceImpl implements orderService {
-    private final orderRepository orderRepository;
+public class OrderServiceImpl implements OrderService {
+    private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
     private final SearchBuilderConverter searchBuilderConverter;
 
@@ -33,16 +30,16 @@ public class orderServiceImpl implements orderService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
-    public List<orderResponse> findOrders(Map<String, Object> Params) {
+    public List<OrderResponse> findOrders(Map<String, Object> Params) {
         OrderSearchBuilder orderSearchBuilder = searchBuilderConverter.toOrderSearchBuilder(Params);
         var orderSpecs = OrderSpecs.byOrderBuilder(orderSearchBuilder);
         List<Order> orders = orderRepository.findAll(orderSpecs);
         if (orders.isEmpty()) {
             throw new DataNotFoundException("Không tìm thấy đơn hàng");
         }
-        List<orderResponse> results = new ArrayList<>();
+        List<OrderResponse> results = new ArrayList<>();
         for (Order order : orders) {
-            results.add(modelMapper.map(order, orderResponse.class));
+            results.add(modelMapper.map(order, OrderResponse.class));
         }
         return results;
     }

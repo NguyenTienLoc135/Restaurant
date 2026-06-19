@@ -1,9 +1,8 @@
 package com.javaweb.api.staff;
 
 import com.javaweb.enums.OrderStatus;
-import com.javaweb.model.response.orderResponse;
-import com.javaweb.service.orderService;
-import lombok.Getter;
+import com.javaweb.model.response.OrderResponse;
+import com.javaweb.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,12 +12,12 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-public class orderManager {
+public class OrderManager {
 
-    private final orderService orderService;
+    private final OrderService orderService;
 
     @GetMapping(value="staff/orders")
-    public List<orderResponse> findOrders(@RequestParam Map<String, Object> Params) {
+    public List<OrderResponse> findOrders(@RequestParam Map<String, Object> Params) {
         return orderService.findOrders(Params);
     }
 

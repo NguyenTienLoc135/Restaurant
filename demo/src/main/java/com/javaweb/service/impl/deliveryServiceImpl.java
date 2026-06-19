@@ -4,11 +4,11 @@ import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.entity.Order;
 import com.javaweb.entity.User;
 import com.javaweb.enums.OrderStatus;
-import com.javaweb.model.response.orderResponse;
-import com.javaweb.repository.orderRepository;
-import com.javaweb.repository.userRepository;
+import com.javaweb.model.response.OrderResponse;
+import com.javaweb.repository.OrderRepository;
+import com.javaweb.repository.UserRepository;
 import com.javaweb.security.CurrentUserProvider;
-import com.javaweb.service.deliveryService;
+import com.javaweb.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,24 +22,24 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class deliveryServiceImpl implements deliveryService {
-    private final orderRepository orderRepository;
-    private final userRepository userRepository;
+public class DeliveryServiceImpl implements DeliveryService {
+    private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final CurrentUserProvider currentUserProvider;
 
 
     @Transactional
     @Override
-    public List<orderResponse> getDeliveryOrders() {
+    public List<OrderResponse> getDeliveryOrders() {
         List<Order> orders = orderRepository.findAll();
-        List<orderResponse> results = new ArrayList<>();
+        List<OrderResponse> results = new ArrayList<>();
         LocalDate today = LocalDate.now();
         for (Order order : orders) {
             if (OrderStatus.DELIVERY.equals(order.getStatus())
                     && order.getOrderTime() != null
                     && order.getOrderTime().toLocalDate().equals(today)) {
-                results.add(modelMapper.map(order, orderResponse.class));
+                results.add(modelMapper.map(order, OrderResponse.class));
             }
         }
         return results;

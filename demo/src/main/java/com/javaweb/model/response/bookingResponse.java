@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class bookingResponse {
+public class BookingResponse {
     private String username;
     private LocalDateTime bookingTime;
     private Integer guestNumber;

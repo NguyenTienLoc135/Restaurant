@@ -3,10 +3,10 @@ package com.javaweb.service.impl;
 import com.javaweb.customExceptions.ConflictException;
 import com.javaweb.entity.User;
 import com.javaweb.enums.UserIsActive;
-import com.javaweb.model.request.UserRegisterRequest;
-import com.javaweb.model.request.userLoginRequest;
-import com.javaweb.model.response.userResponse;
-import com.javaweb.service.userService;
+import com.javaweb.model.request.UserRequest;
+import com.javaweb.model.request.UserLoginRequest;
+import com.javaweb.model.response.UserResponse;
+import com.javaweb.service.UserService;
 import com.javaweb.utils.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -17,7 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.javaweb.repository.userRepository;
+import com.javaweb.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 
@@ -30,24 +30,18 @@ import static com.javaweb.enums.UserRole.CUSTOMER;
 
 @Service
 @RequiredArgsConstructor
-public class userServiceImpl  implements userService {
+public class UserServiceImpl implements UserService {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    private final userRepository userRepository;
+    private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
     @Transactional
     @Override
-    public String login(userLoginRequest userLoginRequest){
-        if(userLoginRequest.getUsername()==null || userLoginRequest.getUsername().trim().equals("")){
-            throw new NullPointerException("tên đăng nhap không được để trống");
-        }
-        if(userLoginRequest.getPassword()==null || userLoginRequest.getPassword().trim().equals("")){
-            throw new NullPointerException("mật khau khong được để trong");
-        }
+    public String login(UserLoginRequest userLoginRequest){
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         userLoginRequest.getUsername(),
@@ -65,7 +59,7 @@ public class userServiceImpl  implements userService {
 
     @Transactional
     @Override
-    public String Register(UserRegisterRequest userRegisterRequest) {
+    public String Register(UserRequest userRegisterRequest) {
         try {
             Long n = Long.parseLong(userRegisterRequest.getPhone());
         }
@@ -97,11 +91,11 @@ public class userServiceImpl  implements userService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
-    public List<userResponse> findAll(){
+    public List<UserResponse> findAll(){
         List<User> users = userRepository.findAll();
-        List<userResponse> userResponseList = new ArrayList<>();
+        List<UserResponse> userResponseList = new ArrayList<>();
         for(User user : users){
-            userResponseList.add(modelMapper.map(user,userResponse.class));
+            userResponseList.add(modelMapper.map(user, UserResponse.class));
         }
         return userResponseList;
     }

@@ -1,10 +1,10 @@
 package com.javaweb.service;
 
-import com.javaweb.model.response.orderResponse;
+import com.javaweb.model.response.OrderResponse;
 
 import java.util.List;
 
-public interface deliveryService {
-    List<orderResponse> getDeliveryOrders();
+public interface DeliveryService {
+    List<OrderResponse> getDeliveryOrders();
     String claimOrder(Integer orderId);
 }

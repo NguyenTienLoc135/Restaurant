@@ -1,7 +1,7 @@
 package com.javaweb.api.driver;
 
-import com.javaweb.model.response.orderResponse;
-import com.javaweb.service.deliveryService;
+import com.javaweb.model.response.OrderResponse;
+import com.javaweb.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,8 +13,8 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-public class deliveryManager {
-    private final deliveryService deliveryService;
+public class DeliveryManager {
+    private final DeliveryService deliveryService;
 
     @PutMapping(value ="/delivery/{id}")
     public ResponseEntity<String> claimOrder(@PathVariable Integer id) {
@@ -22,7 +22,7 @@ public class deliveryManager {
     }
 
     @GetMapping(value= "/delivery")
-    public List<orderResponse> getDeliveryOrder(){
+    public List<OrderResponse> getDeliveryOrder(){
         return deliveryService.getDeliveryOrders();
     }
 }

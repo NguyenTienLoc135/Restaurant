@@ -3,16 +3,16 @@ package com.javaweb.service.impl;
 import com.javaweb.builder.ItemSearchBuilder;
 import com.javaweb.converter.SearchBuilderConverter;
 import com.javaweb.customExceptions.DataNotFoundException;
-import com.javaweb.model.request.itemRequest;
-import com.javaweb.model.response.itemResponse;
+import com.javaweb.model.request.ItemRequest;
+import com.javaweb.model.response.ItemResponse;
 import com.javaweb.entity.Item;
-import com.javaweb.service.itemService;
+import com.javaweb.service.ItemService;
 import com.javaweb.specification.ItemSpecs;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-import com.javaweb.repository.itemRepository;
+import com.javaweb.repository.ItemRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -22,28 +22,29 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class itemServiceImpl implements itemService {
+public class ItemServiceImpl implements ItemService {
 
-    private final itemRepository itemRepository;
+    private final ItemRepository itemRepository;
     private final ModelMapper modelMapper;
     private final SearchBuilderConverter itemSearchBuilderConverter;
-    private itemResponse  filter(List<Item> itemEntity){ // filter entity -> response
-            itemResponse itemResponse =modelMapper.map(itemEntity, itemResponse.class);
+    private ItemResponse filter(List<Item> itemEntity){ // filter entity -> response
+            ItemResponse itemResponse =modelMapper.map(itemEntity, ItemResponse.class);
             return itemResponse;
     }
 
+    @Transactional
     @PreAuthorize("permitAll()")
     @Override
-    public List<itemResponse> searchItems(Map<String, Object> params){
+    public List<ItemResponse> searchItems(Map<String, Object> params){
         ItemSearchBuilder itemSearchBuilder = itemSearchBuilderConverter.toItemSearchBuilder(params);// chuyen param ve 1 searchBuilder
         var itemSpecs = ItemSpecs.byBuilder(itemSearchBuilder);// viêt code truy vấn
         List<Item> items = itemRepository.findAll(itemSpecs);// làm việc với entity
         if (items.isEmpty()) {
             throw new DataNotFoundException("Không Tìm Thấy Món");
         }
-        List<itemResponse> menu = new ArrayList<>();
+        List<ItemResponse> menu = new ArrayList<>();
         for (Item it : items) {// filter từ entity về response
-            menu.add(modelMapper.map(it, itemResponse.class));
+            menu.add(modelMapper.map(it, ItemResponse.class));
         }
         return menu;
     }
@@ -51,15 +52,15 @@ public class itemServiceImpl implements itemService {
     @Transactional
     @PreAuthorize("permitAll()")
     @Override
-    public itemResponse findItem(Integer id){
+    public ItemResponse findItem(Integer id){
         Item itemEntity = itemRepository.findById(id).orElse(null);
-        return modelMapper.map(itemEntity, itemResponse.class);
+        return modelMapper.map(itemEntity, ItemResponse.class);
     }
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
-    public String insertItem(itemRequest itemRequest){
+    public String insertItem(ItemRequest itemRequest){
         Item itemEntity = new Item();
         BigDecimal price;
         try {
@@ -83,7 +84,7 @@ public class itemServiceImpl implements itemService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     @Override
-    public String updateItem(Integer id, itemRequest itemRequest){
+    public String updateItem(Integer id, ItemRequest itemRequest){
         Item itemEntity = itemRepository.findById(id).orElseThrow();
         BigDecimal price;
         try {

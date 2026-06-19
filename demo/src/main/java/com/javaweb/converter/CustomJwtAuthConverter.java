@@ -2,10 +2,9 @@ package com.javaweb.converter;
 
 import com.javaweb.entity.User;
 import com.javaweb.enums.UserIsActive;
-import com.javaweb.repository.userRepository;
+import com.javaweb.repository.UserRepository;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -17,9 +16,9 @@ import java.util.List;
 @Component
 public class CustomJwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
-    private final userRepository userRepository;
+    private final UserRepository userRepository;
 
-    public CustomJwtAuthConverter(userRepository userRepository) {
+    public CustomJwtAuthConverter(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 

@@ -1,26 +1,25 @@
 package com.javaweb.service;
 
-import com.javaweb.model.request.itemRequest;
-import com.javaweb.model.response.itemResponse;
+import com.javaweb.model.request.ItemRequest;
+import com.javaweb.model.response.ItemResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-public interface itemService {
+public interface ItemService {
 
 
-    List<itemResponse> searchItems(Map<String, Object> params);
-
-    @Transactional
-    itemResponse findItem(Integer id);
-
-    String insertItem(itemRequest itemRequest);
+    List<ItemResponse> searchItems(Map<String, Object> params);
 
     @Transactional
-    String updateItem(Integer id, itemRequest itemRequest);
+    ItemResponse findItem(Integer id);
+
+    String insertItem(ItemRequest itemRequest);
+
+    @Transactional
+    String updateItem(Integer id, ItemRequest itemRequest);
 
     @Transactional
     String deleteItem(Integer id);

@@ -1,10 +1,11 @@
 package com.javaweb.api;
 
-import com.javaweb.model.request.UserRegisterRequest;
-import com.javaweb.model.request.userLoginRequest;
-import com.javaweb.model.response.itemResponse;
-import com.javaweb.service.itemService;
-import com.javaweb.service.userService;
+import com.javaweb.model.request.UserRequest;
+import com.javaweb.model.request.UserLoginRequest;
+import com.javaweb.model.response.ItemResponse;
+import com.javaweb.service.ItemService;
+import com.javaweb.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,28 +15,28 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-public class publicController {
+public class PublicController {
 
-    private final itemService itemService;
-    private final userService userService;
+    private final ItemService itemService;
+    private final UserService userService;
 
     @PostMapping(value = "/public/login")
-    public ResponseEntity<String> login(@RequestBody userLoginRequest userLoginRequest){
+    public ResponseEntity<String> login(@RequestBody @Valid UserLoginRequest userLoginRequest){
         return ResponseEntity.ok(userService.login(userLoginRequest));
     }
 
     @PostMapping(value = "/public/register")
-    public ResponseEntity<String> register(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public ResponseEntity<String> register(@RequestBody  @Valid UserRequest userRegisterRequest) {
         return ResponseEntity.ok(userService.Register(userRegisterRequest));
     }
 
     @GetMapping(value ="/public/item") // tìm tât cả các món
-    public List<itemResponse> searchItems(@RequestParam Map<String,Object> params){
+    public List<ItemResponse> searchItems(@RequestParam Map<String,Object> params){
         return itemService.searchItems(params);
     }
 
     @GetMapping(value="/public/item/{id}")
-    public itemResponse findItem(@PathVariable Integer id){
+    public ItemResponse findItem(@PathVariable Integer id){
         return itemService.findItem(id);
     }
 
