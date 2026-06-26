@@ -14,13 +14,14 @@ import java.util.List;
 public class UserManager {
     private final UserService userService;
 
-    @GetMapping(value="/users/")
+    @GetMapping(value="/staff/users")
     public List<UserResponse> findAll(){
         return userService.findAll();
     }
 
-    @PutMapping(value = "/users/{id}")
+    @PutMapping(value = "/staff/users/{id}")
     public ResponseEntity<String> banUser(@PathVariable Integer id,  UserIsActive userIsActive){
         return ResponseEntity.ok(userService.banUser(id, userIsActive));
     }
 }
+

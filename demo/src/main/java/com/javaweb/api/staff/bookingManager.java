@@ -15,13 +15,15 @@ import java.util.Map;
 public class BookingManager {
     private final ReservationService reservationService;
 
-    @GetMapping(value ="/bookings/")
+    @GetMapping(value ="/staff/reservations")
     public List<BookingResponse> revervationList(@RequestParam Map<String, Object> params) {
         return  reservationService.getRerservationList(params);
     }
 
-    @PutMapping(value="/booking/{id}")
+    @PutMapping(value="/reservation/{id}")
     public ResponseEntity<String> changeReservation(@PathVariable Integer id, BookingStatus bookingStatus) {
         return ResponseEntity.ok(reservationService.updateReservation(id, bookingStatus));
     }
 }
+
+

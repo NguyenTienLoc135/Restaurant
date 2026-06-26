@@ -11,7 +11,7 @@ import com.javaweb.security.CurrentUserProvider;
 import com.javaweb.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +31,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Transactional
     @Override
+    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
     public List<OrderResponse> getDeliveryOrders() {
         List<Order> orders = orderRepository.findAll();
         List<OrderResponse> results = new ArrayList<>();
@@ -50,7 +51,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @PreAuthorize("hasAuthority('ROLE_DRIVER')")
     public String claimOrder(Integer orderId) {
         Integer userId = currentUserProvider.getCurrentUserId()
-                .orElseThrow(() -> new AccessDeniedException("Unauthenticated"));
+                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new DataNotFoundException("Order not found"));
         User driver = userRepository.findById(userId)
@@ -65,3 +66,5 @@ public class DeliveryServiceImpl implements DeliveryService {
         return "claim success";
     }
 }
+
+

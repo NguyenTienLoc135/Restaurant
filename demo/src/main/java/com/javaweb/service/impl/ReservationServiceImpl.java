@@ -12,7 +12,7 @@ import com.javaweb.service.ReservationService;
 import com.javaweb.specification.BookingSpecs;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,7 +63,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public List<BookingResponse> myReservationHistory(){
         Integer userId = currentUserProvider.getCurrentUserId()
-                .orElseThrow(() -> new AccessDeniedException("Unauthenticated"));
+                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
         List<Booking> bookingList = bookingRepository.findByUserId(userId);
         if(bookingList.isEmpty()){
             throw new DataNotFoundException("not found");
@@ -78,3 +78,4 @@ public class ReservationServiceImpl implements ReservationService {
         return result;
     }
 }
+

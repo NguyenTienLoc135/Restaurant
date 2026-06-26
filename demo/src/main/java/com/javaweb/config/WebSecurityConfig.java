@@ -4,6 +4,7 @@ import com.javaweb.converter.CustomJwtAuthConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,7 +31,9 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/staff/**").hasAuthority("ROLE_STAFF")
+                        .requestMatchers("/reservation/**").hasAnyAuthority("ROLE_STAFF", "ROLE_CUSTOMER")
                         .requestMatchers("/user/**").hasAuthority("ROLE_CUSTOMER")
+                        .requestMatchers("/delivery/**").hasAuthority("ROLE_DRIVER")
                         .anyRequest().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -48,3 +51,9 @@ public class WebSecurityConfig {
                 .build();
     }
 }
+
+
+
+
+
+

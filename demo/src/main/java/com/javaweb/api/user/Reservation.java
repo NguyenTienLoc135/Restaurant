@@ -13,10 +13,12 @@ import java.util.List;
 public class Reservation {
     private final ReservationService bookingService;
 
-    @GetMapping(value = "/booking/me")
+    @GetMapping(value = "/user/reservation/me")
     public List<BookingResponse> myBooking(){
         return  bookingService.myReservationHistory();
     }
 
 
 }
+
+
