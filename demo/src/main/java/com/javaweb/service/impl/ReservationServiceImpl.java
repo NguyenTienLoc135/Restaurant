@@ -4,9 +4,12 @@ import com.javaweb.builder.BookingSearchBuilder;
 import com.javaweb.converter.SearchBuilderConverter;
 import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.entity.Booking;
+import com.javaweb.entity.User;
 import com.javaweb.enums.BookingStatus;
+import com.javaweb.model.request.BookingRequest;
 import com.javaweb.model.response.BookingResponse;
 import com.javaweb.repository.BookingRepository;
+import com.javaweb.repository.UserRepository;
 import com.javaweb.security.CurrentUserProvider;
 import com.javaweb.service.ReservationService;
 import com.javaweb.specification.BookingSpecs;
@@ -26,7 +29,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final SearchBuilderConverter  searchBuilderConverter;
     private final ModelMapper modelMapper;
     private final CurrentUserProvider currentUserProvider;
-
+    private final UserRepository userRepository;
 
 
     @Transactional
@@ -76,6 +79,46 @@ public class ReservationServiceImpl implements ReservationService {
             result.add(res);
         }
         return result;
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @Override
+    public String createBooking(BookingRequest bookingRequest){
+        Integer userId = currentUserProvider.getCurrentUserId()
+                .orElseThrow(() -> new AccessDeniedException("Unauthenticated"));
+        if(bookingRequest.getBookingDate() == null){
+            throw new IllegalArgumentException("Ngay thang ko dc de trong");
+        }
+        if (bookingRequest.getGuests() == null || bookingRequest.getGuests() <= 0) {
+            throw new IllegalArgumentException("so khach khong hop le");
+        }
+        if (bookingRequest.getCustomerId() != null && !bookingRequest.getCustomerId().equals(userId)) {
+            throw new AccessDeniedException("Forbidden");
+        }
+        User user = userRepository.findById(userId).
+                orElseThrow(() -> new DataNotFoundException("khong tim thay user"));
+        Booking booking = new Booking();
+        booking.setUser(user);
+        booking.setBookingTime(bookingRequest.getBookingDate());
+        booking.setGuestNumber(bookingRequest.getGuests());
+        booking.setStatus(BookingStatus.PENDING);
+        bookingRepository.save(booking);
+        return "Dat ban thanh cong.";
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @Override
+    public String cancelBooking(Integer id){
+        Booking booking = bookingRepository.findById(id).
+                orElseThrow(() -> new DataNotFoundException("khong tim thay booking"));
+        if(booking.getStatus() != BookingStatus.PENDING){
+            throw new IllegalArgumentException("Don dat ban da duoc xu ly. Khong the huy");
+        }
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+        return "Da xoa don dat ban";
     }
 }
 

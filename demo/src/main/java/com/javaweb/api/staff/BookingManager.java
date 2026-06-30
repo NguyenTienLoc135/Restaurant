@@ -12,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/staff")
 public class BookingManager {
     private final ReservationService reservationService;
 
