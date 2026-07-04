@@ -2,6 +2,7 @@ package com.javaweb.api;
 
 import com.javaweb.model.request.UserRequest;
 import com.javaweb.model.request.UserLoginRequest;
+import com.javaweb.model.response.ItemDetailResponse;
 import com.javaweb.model.response.ItemResponse;
 import com.javaweb.service.ItemService;
 import com.javaweb.service.UserService;
@@ -36,7 +37,7 @@ public class PublicController {
     }
 
     @GetMapping(value="/public/item/{id}")
-    public ItemResponse findItem(@PathVariable Integer id){
+    public ItemDetailResponse findItem(@PathVariable Integer id){
         return itemService.findItem(id);
     }
 

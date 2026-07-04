@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,6 +41,38 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailService orderDetailService;
     private final CurrentUserProvider currentUserProvider;
 
+
+    private OrderResponse orderResponseFilter(Order order){
+        User user = order.getCustomer();
+        User driver = order.getDriver();
+        OrderResponse orderResponse = new OrderResponse();
+        orderResponse.setId(order.getId());
+        orderResponse.setUsername(user.getUsername());
+        orderResponse.setDriverName(driver != null ? driver.getUsername() : null);
+        orderResponse.setUserPhone(user.getPhone());
+        orderResponse.setDriverPhone(driver != null ? driver.getPhone() : null);
+        orderResponse.setAddress(order.getAddress());
+        orderResponse.setDeliveryFee(order.getDeliveryFee());
+        orderResponse.setItemsTotal(order.getItemsTotal());
+        orderResponse.setTotalPrice(order.getItemsTotal());
+        orderResponse.setStatus(order.getStatus());
+        return orderResponse;
+    }
+
+    private List<OrderDetailResponse> orderDetailResponseFilter(Order order){
+        List<OrderDetail> orderDetails = order.getOrderDetail();
+        List<OrderDetailResponse> orderDetailResponse = new ArrayList<>();
+        for(OrderDetail detail : orderDetails){
+            OrderDetailResponse orderDetail = new OrderDetailResponse();
+            orderDetail.setName(detail.getItem().getName());
+            orderDetail.setPrice(detail.getItem().getPrice());
+            orderDetail.setDescription(detail.getItem().getDescription());
+            orderDetail.setAmount(detail.getQuantity());
+            orderDetailResponse.add(orderDetail);
+        }
+        return orderDetailResponse;
+    }
+
     @Transactional
     @Override
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
@@ -50,7 +83,36 @@ public class OrderServiceImpl implements OrderService {
         if (orders.isEmpty()) {
             throw new DataNotFoundException("Khong tim thay don hang");
         }
-        return mapOrders(orders);
+        List<OrderResponse> orderResponseList = new ArrayList<>();
+        for(Order order : orders){
+            OrderResponse orderResponse = orderResponseFilter(order);
+            orderResponseList.add(orderResponse);
+        }
+        return orderResponseList;
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @Override
+    public List<OrderResponse> findMyOrders(){
+        Integer userId = currentUserProvider.getCurrentUserId()
+                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
+        List<Order> orders = orderRepository.findByCustomerId(userId);
+        List<OrderResponse> orderResponseList = new ArrayList<>();
+        for(Order order : orders){
+            OrderResponse orderResponse = orderResponseFilter(order);
+            orderResponseList.add(orderResponse);
+        }
+        return orderResponseList;
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER')")
+    @Override
+    public List<OrderDetailResponse> orderDetail(Integer id){
+        Order order = orderRepository.findById(id).orElseThrow();
+        List<OrderDetailResponse> details = orderDetailResponseFilter(order);
+        return details;
     }
 
     @Transactional
@@ -66,29 +128,9 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
-    public List<OrderResponse> findMyOrders(Map<String, Object> params) {
-        Integer userId = requireCurrentUserId();
-        OrderSearchBuilder raw = searchBuilderConverter.toOrderSearchBuilder(params);
-        OrderSearchBuilder orderSearchBuilder = new OrderSearchBuilder.Builder()
-                .setUserId(userId)
-                .setDate(raw.getDate())
-                .setStatus(raw.getStatus())
-                .setFromDate(raw.getFromDate())
-                .setToDate(raw.getToDate())
-                .build();
-        var orderSpecs = OrderSpecs.byOrderBuilder(orderSearchBuilder);
-        List<Order> orders = orderRepository.findAll(orderSpecs);
-        if (orders.isEmpty()) {
-            throw new DataNotFoundException("Khong tim thay don hang");
-        }
-        return mapOrders(orders);
-    }
-
-    @Transactional
-    @Override
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     public String createMyOrder(OrderRequest request) {
-        Integer userId = requireCurrentUserId();
+        Integer userId = currentUserProvider.getCurrentUserId()
+                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new IllegalArgumentException("danh sach mon khong duoc de trong");
         }
@@ -98,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = new Order();
         order.setCustomer(customer);
-        order.setAddress(request.getAddress());
+        order.setAddress(customer.getAddress());
         order.setNote(request.getNote());
         order.setOrderTime(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
@@ -119,7 +161,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     public String deleteMyOrder(Integer id) {
-        Integer userId = requireCurrentUserId();
+        Integer userId = currentUserProvider.getCurrentUserId()
+                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y Ã„â€˜Ã†Â¡n hÃƒÂ ng"));
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(userId)) {
@@ -133,43 +176,5 @@ public class OrderServiceImpl implements OrderService {
         return "Da huy don hang.";
     }
 
-    private Integer requireCurrentUserId() {
-        return currentUserProvider.getCurrentUserId()
-                .orElseThrow(() -> new AccessDeniedException("Unauthenticated"));
-    }
 
-    private List<OrderResponse> mapOrders(List<Order> orders) {
-        List<OrderResponse> results = new ArrayList<>();
-        for (Order order : orders) {
-            OrderResponse res = new OrderResponse();
-            res.setId(order.getId());
-            if (order.getCustomer() != null) {
-                res.setCustomerId(order.getCustomer().getId());
-            }
-            if (order.getDriver() != null) {
-                res.setDriverId(order.getDriver().getId());
-            }
-            res.setOrderTime(order.getOrderTime());
-            res.setAddress(order.getAddress());
-            BigDecimal itemsTotal = order.getItemsTotal() != null ? order.getItemsTotal() : BigDecimal.ZERO;
-            BigDecimal deliveryFee = order.getDeliveryFee() != null ? order.getDeliveryFee() : BigDecimal.ZERO;
-            res.setItemsTotal(itemsTotal);
-            res.setDeliveryFee(deliveryFee);
-            res.setNote(order.getNote());
-            res.setTotalPrice(order.getItemsTotal().add(res.getDeliveryFee()));
-            res.setStatus(order.getStatus() != null ? order.getStatus().name() : null);
-            List<OrderDetailResponse> items = new ArrayList<>();
-            if (order.getOrderDetail() != null) {
-                for (OrderDetail d : order.getOrderDetail()) {
-                    OrderDetailResponse item = new OrderDetailResponse();
-                    item.setId(d.getItem().getId());
-                    item.setAmount(d.getQuantity());
-                    items.add(item);
-                }
-            }
-            res.setItems(items);
-            results.add(res);
-        }
-        return results;
-    }
 }

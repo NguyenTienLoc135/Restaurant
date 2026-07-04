@@ -4,6 +4,7 @@ import com.javaweb.builder.ItemSearchBuilder;
 import com.javaweb.converter.SearchBuilderConverter;
 import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.model.request.ItemRequest;
+import com.javaweb.model.response.ItemDetailResponse;
 import com.javaweb.model.response.ItemResponse;
 import com.javaweb.entity.Item;
 import com.javaweb.service.ItemService;
@@ -52,9 +53,9 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     @PreAuthorize("permitAll()")
     @Override
-    public ItemResponse findItem(Integer id){
+    public ItemDetailResponse findItem(Integer id){
         Item itemEntity = itemRepository.findById(id).orElse(null);
-        return modelMapper.map(itemEntity, ItemResponse.class);
+        return modelMapper.map(itemEntity, ItemDetailResponse.class);
     }
 
     @Transactional

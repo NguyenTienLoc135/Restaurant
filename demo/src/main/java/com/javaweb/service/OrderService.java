@@ -2,6 +2,7 @@ package com.javaweb.service;
 
 import com.javaweb.enums.OrderStatus;
 import com.javaweb.model.request.OrderRequest;
+import com.javaweb.model.response.OrderDetailResponse;
 import com.javaweb.model.response.OrderResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,12 +16,16 @@ public interface OrderService {
     List<OrderResponse> findOrders(Map<String, Object> params);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
-    String updateOrderStatus(Integer id, OrderStatus status);
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    List<OrderResponse> findMyOrders();
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
-    List<OrderResponse> findMyOrders(Map<String, Object> params);
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER')")
+    List<OrderDetailResponse> orderDetail(Integer id);
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    String updateOrderStatus(Integer id, OrderStatus status);
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")

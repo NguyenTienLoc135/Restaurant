@@ -1,6 +1,7 @@
 package com.javaweb.api.user;
 
 import com.javaweb.model.request.OrderRequest;
+import com.javaweb.model.response.OrderDetailResponse;
 import com.javaweb.model.response.OrderResponse;
 import com.javaweb.service.OrderService;
 import jakarta.validation.Valid;
@@ -16,17 +17,22 @@ import java.util.Map;
 public class Orders {
     public final OrderService orderService;
 
-    @GetMapping(value = "/user/orders")
-    public List<OrderResponse> selectOrders(@RequestParam Map<String, Object> params) {
-        return orderService.findMyOrders(params);
+    @GetMapping(value = "/orders/me")
+    public List<OrderResponse> selectOrders() {
+        return orderService.findMyOrders();
     }
 
-    @PostMapping(value = "/user/orders")
+    @GetMapping(value = "/orders/{id}")
+    public List<OrderDetailResponse> detailOrders(@PathVariable Integer id) {
+        return orderService.orderDetail(id);
+    }
+
+    @PostMapping(value = "/orders/")
     public ResponseEntity<String> createOrders(@Valid @RequestBody OrderRequest orderRequest) {
         return ResponseEntity.ok(orderService.createMyOrder(orderRequest));
     }
 
-    @DeleteMapping(value = "/user/orders/{id}")
+    @DeleteMapping(value = "/orders/{id}")
     public ResponseEntity<String> deleteOrders(@PathVariable Integer id){
         return ResponseEntity.ok(orderService.deleteMyOrder(id));
     }

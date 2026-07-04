@@ -10,7 +10,6 @@ import lombok.Setter;
 @Setter
 public class OrderDetailRequest {
     @NotNull(message = " id khong duoc de trong ")
-    @JsonAlias("itemId")
     private Integer id;
 
     @NotNull(message = " so luong khong duoc de trong ")

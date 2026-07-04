@@ -1,7 +1,6 @@
 package com.javaweb.service.impl;
 
 import com.javaweb.customExceptions.DataNotFoundException;
-import com.javaweb.customExceptions.ItemUnavailableException;
 import com.javaweb.entity.Item;
 import com.javaweb.entity.Order;
 import com.javaweb.entity.OrderDetail;
@@ -34,10 +33,9 @@ public class OrderDetailServiceImpl implements OrderDetailService {
         for (OrderDetailRequest d : items) {
             Item item = itemRepository.findById(d.getId())
                     .orElseThrow(() -> new DataNotFoundException("khong tim thay mon"));
-
-            if (item.getIsAvailable() == ItemAvailable.UNAVAILABLE) {
+            /*if (item.getIsAvailable() == ItemAvailable.UNAVAILABLE) {
                 throw new ItemUnavailableException("mon khong con");
-            }
+            }*/
             OrderDetail od = new OrderDetail();
             od.setOrder(order);
             od.setItem(item);

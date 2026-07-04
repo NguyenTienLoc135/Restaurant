@@ -16,12 +16,12 @@ public class OrderManager {
 
     private final OrderService orderService;
 
-    @GetMapping(value="/staff/orders")
+    @GetMapping(value="/orders/")
     public List<OrderResponse> findOrders(@RequestParam Map<String, Object> Params) {
         return orderService.findOrders(Params);
     }
 
-    @PutMapping(value = "/staff/orders/{id}")
+    @PutMapping(value = "/orders/{id}")
     public ResponseEntity<String> updateOrder(@PathVariable Integer id, OrderStatus status) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id,status));
     }

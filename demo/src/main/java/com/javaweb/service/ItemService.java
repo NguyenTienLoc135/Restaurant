@@ -1,6 +1,7 @@
 package com.javaweb.service;
 
 import com.javaweb.model.request.ItemRequest;
+import com.javaweb.model.response.ItemDetailResponse;
 import com.javaweb.model.response.ItemResponse;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,7 +15,7 @@ public interface ItemService {
     List<ItemResponse> searchItems(Map<String, Object> params);
 
     @Transactional
-    ItemResponse findItem(Integer id);
+    ItemDetailResponse findItem(Integer id);
 
     String insertItem(ItemRequest itemRequest);
 
