@@ -34,6 +34,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/reservation/**").hasAnyAuthority("ROLE_STAFF", "ROLE_CUSTOMER")
                         .requestMatchers("/user/**").hasAuthority("ROLE_CUSTOMER")
                         .requestMatchers("/delivery/**").hasAuthority("ROLE_DRIVER")
+                        .requestMatchers("/info/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_STAFF", "ROLE_DRIVER")
                         .anyRequest().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

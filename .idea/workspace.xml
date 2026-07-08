@@ -5,31 +5,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5b795571-dd66-4115-b1b0-78df7cdb6b02" name="Changes" comment="Initial commit">
+      <change afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/user/Info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/request/UserUpdateRequest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/PublicController.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/PublicController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/OrderManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/OrderManager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/user/Menu.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/user/Orders.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/user/Orders.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/builder/UserSearchBuilder.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/customExceptions/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/customExceptions/GlobalExceptionHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/request/OrderDetailRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/request/OrderDetailRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/request/OrderRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/request/OrderRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/ItemResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/ItemResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/OrderDetailResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/OrderDetailResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/OrderResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/OrderResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/repository/OrderRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/repository/OrderRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/ItemService.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/ItemService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/OrderService.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/OrderService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ItemServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ItemServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderDetailServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderDetailServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/config/WebSecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/UserResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/model/response/UserResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/UserService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ReservationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ReservationServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/UserServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/demo/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="86" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -44,6 +36,22 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "minhhai09102005-svg"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/youngboiseetinh-2602/lap-trinh-web",
+    "accountId": "66da8f5c-50c1-4acb-bb46-ee5f856dd2e9"
+  }
+}]]></component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -52,20 +60,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.DemoApplication.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Administrator/Documents/intelij&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.DemoApplication.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.DemoApplication.executor": "Run",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/Administrator/Documents/intelij",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
       <recent name="com.javaweb" />
@@ -75,17 +85,6 @@
     </key>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="intelij" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="intelij" />
-      <option name="filePath" />
-      <method v="2" />
-    </configuration>
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="intelij" />
       <option name="ENV_FILES" value="" />
@@ -120,11 +119,22 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <method v="2" />
     </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="intelij" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="intelij" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.27397.103" />
+        <option value="bundled-jdk-30f59d01ecdd-26cb7f24e5b0-intellij.indexing.shared.core-IU-253.29346.138" />
       </set>
     </attachedChunks>
   </component>
