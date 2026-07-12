@@ -16,10 +16,6 @@ import java.util.Map;
 public class MenuManager {
     private final ItemService itemService;
 
-    @GetMapping(value ="/staff/item") // tìm tât cả các món
-    public List<ItemResponse> searchItems(@RequestParam Map<String,Object> params){
-        return itemService.searchItems(params);
-    }
 
     @PostMapping(value="/staff/item")
     public ResponseEntity<String> insertItem( @Valid @RequestBody ItemRequest itemRequest){

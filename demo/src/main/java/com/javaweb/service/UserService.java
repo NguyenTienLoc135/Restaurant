@@ -3,7 +3,6 @@ package com.javaweb.service;
 import com.javaweb.enums.UserIsActive;
 import com.javaweb.model.request.UserRequest;
 import com.javaweb.model.request.UserLoginRequest;
-import com.javaweb.model.request.UserUpdateRequest;
 import com.javaweb.model.response.UserResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +23,4 @@ public interface UserService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     String banUser(Integer id, UserIsActive userIsActive);
-
-    @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER')")
-    UserResponse showInfo();
-
-    @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER')")
-    String updateMyInfo(UserUpdateRequest req);
-
-
 }
