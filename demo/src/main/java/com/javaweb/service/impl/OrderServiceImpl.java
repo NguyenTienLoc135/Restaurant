@@ -164,7 +164,7 @@ public class OrderServiceImpl implements OrderService {
         Integer userId = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y Ã„â€˜Ã†Â¡n hÃƒÂ ng"));
+                .orElseThrow(() -> new DataNotFoundException("Khong the tim thay don hang"));
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(userId)) {
             throw new AccessDeniedException("Forbidden");
         }
