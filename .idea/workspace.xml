@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5b795571-dd66-4115-b1b0-78df7cdb6b02" name="Changes" comment="Initial commit">
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/demo/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/mvnw.cmd" beforeDir="false" afterPath="$PROJECT_DIR$/demo/mvnw.cmd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/demo/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/MenuManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/MenuManager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/demo/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/resources/application.properties" afterDir="false" />
-    </list>
+    <list default="true" id="5b795571-dd66-4115-b1b0-78df7cdb6b02" name="Changes" comment="Initial commit" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
