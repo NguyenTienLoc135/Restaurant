@@ -1,6 +1,7 @@
 package com.javaweb.api.staff;
 
 import com.javaweb.model.request.ItemRequest;
+import com.javaweb.model.response.ItemDetailResponse;
 import com.javaweb.model.response.ItemResponse;
 import com.javaweb.service.ItemService;
 import jakarta.validation.Valid;
@@ -16,6 +17,15 @@ import java.util.Map;
 public class MenuManager {
     private final ItemService itemService;
 
+    @GetMapping(value="/staff/item")
+    public ResponseEntity<List<ItemResponse>> searchItems(@RequestParam Map<String,Object> params){
+        return ResponseEntity.ok(itemService.searchItems(params));
+    }
+
+    @GetMapping(value="/staff/item/{id}")
+    public ResponseEntity<ItemDetailResponse> findItem(@PathVariable Integer id){
+        return ResponseEntity.ok(itemService.findItem(id));
+    }
 
     @PostMapping(value="/staff/item")
     public ResponseEntity<String> insertItem( @Valid @RequestBody ItemRequest itemRequest){
