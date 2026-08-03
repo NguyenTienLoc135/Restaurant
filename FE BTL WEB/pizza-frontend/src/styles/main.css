@@ -1,0 +1,45 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: "DM Sans", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  height: auto !important;
+}
+
+/* KHÔNG min-height, KHÔNG height cố định trên #root */
+#root {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Force navbar luôn fixed */
+nav.navbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 9999 !important;
+}
+
+/* Prevent Bootstrap làm video tràn */
+.bg-video {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  max-width: none !important;
+}
+
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+img { max-width: 100%; display: block; }
