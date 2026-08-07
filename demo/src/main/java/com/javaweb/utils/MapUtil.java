@@ -9,13 +9,11 @@ import java.util.Map;
 public class MapUtil {
     public static <T> T getObject(Map<String, Object> params, String key, Class<T> tClass) {
         Object obj = params.getOrDefault(key, null);
-
         if (obj != null) {
             if (tClass.getTypeName().equals("java.lang.Integer")) {
                 String s = obj.toString().trim();
                 obj = !s.isEmpty() ? Integer.valueOf(s) : null;
             }
-
             else if (tClass.getTypeName().equals("java.math.BigDecimal")) {
                 String s = obj.toString().trim();
                 if (s.isEmpty() || "null".equalsIgnoreCase(s)) return null;
@@ -25,7 +23,6 @@ public class MapUtil {
                     throw new IllegalArgumentException("sai định dạng tiền");
                 }
             }
-
             else if (tClass.getTypeName().equals("java.time.LocalDate")) {
                 String s = obj.toString().trim();
                 if (s.isEmpty() || "null".equalsIgnoreCase(s)) return null;

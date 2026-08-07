@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5b795571-dd66-4115-b1b0-78df7cdb6b02" name="Changes" comment="Initial commit">
-      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/MenuManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/MenuManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/utils/MapUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/utils/MapUtil.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
