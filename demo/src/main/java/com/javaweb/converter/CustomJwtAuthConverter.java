@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 
 @Component
@@ -24,6 +25,11 @@ public class CustomJwtAuthConverter implements Converter<Jwt, AbstractAuthentica
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
+        Instant expiresAt = jwt.getExpiresAt();
+        if (expiresAt != null && !expiresAt.isAfter(Instant.now())) {
+            throw new InvalidTokenException("Token expired");
+        }
+
         Integer userId;
         try {
             userId = Integer.valueOf(jwt.getSubject());

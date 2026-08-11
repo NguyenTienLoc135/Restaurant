@@ -1,6 +1,7 @@
 package com.javaweb.api.staff;
 
 import com.javaweb.enums.OrderStatus;
+import com.javaweb.model.response.OrderDetailResponse;
 import com.javaweb.model.response.OrderResponse;
 import com.javaweb.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,11 @@ public class OrderManager {
     @GetMapping(value="/orders/")
     public List<OrderResponse> findOrders(@RequestParam Map<String, Object> Params) {
         return orderService.findOrders(Params);
+    }
+
+    @GetMapping(value = "/staff/orders/{id}")
+    public List<OrderDetailResponse> detailOrders(@PathVariable Integer id) {
+        return orderService.orderDetail(id);
     }
 
     @PutMapping(value = "/orders/{id}")
