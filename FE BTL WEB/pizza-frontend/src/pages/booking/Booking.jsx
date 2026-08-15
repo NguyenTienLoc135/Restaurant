@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
-import { useAuth } from "../context/AuthContext"
+import { useAuth } from "../../context/AuthContext"
 import "./Booking.css"
 
 function AddressChip({ restaurant }) {
   const [showMap, setShowMap] = useState(false)
+
   return (
     <div
       className="address-chip"
@@ -36,28 +37,28 @@ function Booking() {
     name: "Pizza 4P's Ba Đình",
     address: "175 Nguyễn Thái Học, Ba Đình, Hà Nội",
     map: "https://www.google.com/maps?q=175%20Nguyen%20Thai%20Hoc%20Ba%20Dinh%20Hanoi&output=embed",
-    mapLink: "https://maps.google.com/?q=175%20Nguyen%20Thai%20Hoc%20Ba%20Dinh%20Hanoi"
+    mapLink: "https://maps.google.com/?q=175%20Nguyen%20Thai%20Hoc%20Ba%20Dinh%20Hanoi",
   }
 
-  const [people, setPeople]       = useState(2)
-  const [date,   setDate]         = useState(new Date())
-  const [time,   setTime]         = useState("")
+  const [people, setPeople] = useState(2)
+  const [date, setDate] = useState(new Date())
+  const [time, setTime] = useState("")
   const [available, setAvailable] = useState(null)
-  const [loading,   setLoading]   = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const [firstName, setFirstName] = useState("")
-  const [lastName,  setLastName]  = useState("")
-  const [email,     setEmail]     = useState("")
-  const [phone,     setPhone]     = useState("")
-  const [notify,    setNotify]    = useState(false)
-  const [success,   setSuccess]   = useState(false)
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [notify, setNotify] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [cancelled, setCancelled] = useState(false)
 
   const HOLD = 900
-  const [timeLeft,        setTimeLeft]        = useState(HOLD)
+  const [timeLeft, setTimeLeft] = useState(HOLD)
   const [countdownActive, setCountdownActive] = useState(false)
 
-  const formRef  = useRef(null)
+  const formRef = useRef(null)
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -78,11 +79,11 @@ function Booking() {
 
   const minutes = Math.floor(timeLeft / 60)
   const seconds = timeLeft % 60
-  const percent  = (timeLeft / HOLD) * 100
+  const percent = (timeLeft / HOLD) * 100
 
   const times = []
   for (let h = 9; h <= 22; h++) {
-    ["00","15","30","45"].forEach(m => {
+    ;["00", "15", "30", "45"].forEach(m => {
       if (h === 22 && m !== "00") return
       times.push(`${h}:${m}`)
     })
@@ -91,10 +92,9 @@ function Booking() {
   function handleSearch() {
     if (!time) return
     setLoading(true)
-    // ← Replace with real API call: check DB availability
     setTimeout(() => {
       setLoading(false)
-      setAvailable(true)   // set false to test "no table"
+      setAvailable(true)
       setTimeLeft(HOLD)
       setCountdownActive(true)
       setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 200)
@@ -106,7 +106,10 @@ function Booking() {
     setCountdownActive(false)
     setAvailable(null)
     setTimeLeft(HOLD)
-    setFirstName(""); setLastName(""); setEmail(""); setPhone("")
+    setFirstName("")
+    setLastName("")
+    setEmail("")
+    setPhone("")
     setCancelled(true)
     setTimeout(() => setCancelled(false), 2500)
   }
@@ -116,37 +119,42 @@ function Booking() {
       alert("Vui lòng nhập đầy đủ thông tin")
       return
     }
+
     clearInterval(timerRef.current)
     setCountdownActive(false)
     setSuccess(true)
-    // Lưu đặt bàn vào profile
+
     addBooking({
-      date:   date.toLocaleDateString("vi-VN"),
-      time:   time || "—",
+      date: date.toLocaleDateString("vi-VN"),
+      time: time || "—",
       guests: people,
+      name: `${lastName} ${firstName}`.trim(),
+      phone,
+      email,
+      restaurant: restaurant.name,
+      note: notify ? "Nhận xác nhận qua tin nhắn" : "",
     })
+
     setTimeout(() => {
       setSuccess(false)
       setAvailable(null)
       setTimeLeft(HOLD)
-      setFirstName(""); setLastName(""); setEmail(""); setPhone("")
+      setFirstName("")
+      setLastName("")
+      setEmail("")
+      setPhone("")
       setTime("")
     }, 3500)
   }
 
   return (
     <div className="booking">
-
-      {/* VIDEO BACKGROUND */}
       <video autoPlay loop muted className="bg-video">
         <source src="/videos/hanoi.mp4" type="video/mp4" />
       </video>
       <div className="overlay" />
 
-      {/* ── MAIN LAYOUT ── */}
       <div className="booking-layout">
-
-        {/* LEFT – City */}
         <div className="booking-left">
           <p className="city-eyebrow">Nhà hàng tại</p>
           <h1 className="city-title">
@@ -158,20 +166,14 @@ function Booking() {
           <p className="city-branch">Ba Đình</p>
         </div>
 
-        {/* RIGHT – Booking card */}
         <div className="booking-card">
-
-          {/* CARD HEADER */}
           <div className="card-header">
             <h2 className="card-title">Đặt bàn trực tuyến</h2>
             <p className="card-sub">Tìm bàn phù hợp với lịch của bạn</p>
           </div>
 
-          {/* SEARCH FIELDS */}
           <div className="card-body">
-
             <div className="search-row">
-
               <div className="sfield">
                 <label>Số người</label>
                 <select value={people} onChange={e => setPeople(e.target.value)}>
@@ -183,54 +185,30 @@ function Booking() {
 
               <div className="sfield">
                 <label>Ngày</label>
-                <DatePicker
-                  selected={date}
-                  onChange={d => setDate(d)}
-                  dateFormat="dd/MM/yyyy"
-                  minDate={new Date()}
-                />
+                <DatePicker selected={date} onChange={d => setDate(d)} dateFormat="dd/MM/yyyy" minDate={new Date()} />
               </div>
 
               <div className="sfield">
                 <label>Giờ</label>
                 <select value={time} onChange={e => setTime(e.target.value)}>
                   <option value="">Chọn giờ</option>
-                  {times.map(t => <option key={t}>{t}</option>)}
+                  {times.map(item => <option key={item}>{item}</option>)}
                 </select>
               </div>
-
             </div>
 
-            <button
-              className={`find-btn ${time ? "active" : ""}`}
-              disabled={!time || loading}
-              onClick={handleSearch}
-            >
-              {loading
-                ? <><span className="spinner" /> Đang tìm...</>
-                : "Tìm bàn trống →"
-              }
+            <button className={`find-btn ${time ? "active" : ""}`} disabled={!time || loading} onClick={handleSearch}>
+              {loading ? <><span className="spinner" /> Đang tìm...</> : "Tìm bàn trống →"}
             </button>
 
-            {available === false && (
-              <p className="no-table-msg">
-                😔 Không còn bàn trống khung giờ này. Vui lòng chọn giờ khác.
-              </p>
-            )}
-
-            {cancelled && (
-              <p className="cancel-toast">✓ Đã huỷ đặt bàn thành công.</p>
-            )}
-
+            {available === false && <p className="no-table-msg">😔 Không còn bàn trống khung giờ này. Vui lòng chọn giờ khác.</p>}
+            {cancelled && <p className="cancel-toast">✓ Đã huỷ đặt bàn thành công.</p>}
           </div>
 
-          {/* ── BOOKING FORM (shows after search) ── */}
           {available === true && (
             <div ref={formRef} className="booking-section">
-
               <div className="bs-divider"><span>Thông tin đặt bàn</span></div>
 
-              {/* summary + countdown */}
               <div className="bs-summary">
                 <div className="bs-tags">
                   <span className="bs-tag">🕐 {time}</span>
@@ -240,33 +218,28 @@ function Booking() {
                 <div className="bs-countdown">
                   <span className="bsc-label">Giữ bàn còn</span>
                   <span className="bsc-time">
-                    {String(minutes).padStart(2,"0")}
+                    {String(minutes).padStart(2, "0")}
                     <em>:</em>
-                    {String(seconds).padStart(2,"0")}
+                    {String(seconds).padStart(2, "0")}
                   </span>
                 </div>
               </div>
 
               <div className="bs-bar"><div className="bs-bar-fill" style={{ width: `${percent}%` }} /></div>
 
-              {/* customer fields */}
               <div className="cust-grid">
-
                 <div className="cf">
                   <label>Tên *</label>
                   <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Nhập tên" />
                 </div>
-
                 <div className="cf">
                   <label>Họ *</label>
                   <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nhập họ" />
                 </div>
-
                 <div className="cf cf-full">
                   <label>Email *</label>
                   <input value={email} onChange={e => setEmail(e.target.value)} placeholder="example@email.com" type="email" />
                 </div>
-
                 <div className="cf">
                   <label>Số điện thoại *</label>
                   <div className="phone-wrap">
@@ -274,36 +247,27 @@ function Booking() {
                     <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0123 456 789" />
                   </div>
                 </div>
-
                 <div className="cf cf-check">
                   <label className="chk-label">
                     <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} />
                     Nhận xác nhận qua tin nhắn
                   </label>
                 </div>
-
               </div>
 
-              {/* action buttons */}
               <div className="action-row">
-                <button className="cancel-btn" onClick={handleCancel}>
-                  Huỷ đặt bàn
-                </button>
+                <button className="cancel-btn" onClick={handleCancel}>Huỷ đặt bàn</button>
                 <button className="confirm-btn" onClick={handleSubmit}>
-                  Xác nhận &nbsp;·&nbsp; {String(minutes).padStart(2,"0")}:{String(seconds).padStart(2,"0")}
+                  Xác nhận · {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
                 </button>
               </div>
-
             </div>
           )}
-
         </div>
       </div>
 
-      {/* ── ADDRESS CHIP — fixed bottom-left ── */}
       <AddressChip restaurant={restaurant} />
 
-      {/* SUCCESS POPUP */}
       {success && (
         <div className="success-overlay">
           <div className="success-box">
@@ -313,7 +277,6 @@ function Booking() {
           </div>
         </div>
       )}
-
     </div>
   )
 }

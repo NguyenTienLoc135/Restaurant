@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { useCart } from "../context/CartContext"
+import { useCart } from "../../context/CartContext"
 import "./Cart.css"
 
 const DELIVERY_FEE = 15000

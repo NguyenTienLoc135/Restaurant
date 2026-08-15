@@ -35,4 +35,4 @@ function PizzaDetail() {
   )
 }
 
-export default PizzaDetail
+export default PizzaDetail;
