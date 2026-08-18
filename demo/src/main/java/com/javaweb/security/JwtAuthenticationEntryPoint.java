@@ -48,7 +48,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                     return true;
                 }
             }
-
+ 
             if (containsExpiredKeyword(current.getMessage())) {
                 return true;
             }
