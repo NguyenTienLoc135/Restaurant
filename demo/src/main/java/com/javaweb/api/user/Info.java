@@ -20,11 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class Info {
     private final UserService userService;
 
+    // Lay thong tin ca nhan cua nguoi dung dang dang nhap.
     @GetMapping("/info/me")
     public ResponseEntity<UserResponse> getMyInfo() {
         return ResponseEntity.ok(userService.showInfo());
     }
 
+    // Cap nhat thong tin ca nhan cua nguoi dung hien tai.
     @PatchMapping("/info/me")
     public ResponseEntity<String> updateMyInfo(@RequestBody UserUpdateRequest req) {
         return ResponseEntity.ok(userService.updateMyInfo(req));

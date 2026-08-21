@@ -14,11 +14,13 @@ import java.util.List;
 public class UserManager {
     private final UserService userService;
 
+    // Lay danh sach tat ca nguoi dung cho nhan vien quan ly.
     @GetMapping(value="/staff/users")
     public List<UserResponse> findAll(){
         return userService.findAll();
     }
 
+    // Khoa hoac mo khoa tai khoan nguoi dung theo trang thai duoc gui len.
     @PutMapping(value = "/staff/users/{id}")
     public ResponseEntity<String> banUser(@PathVariable Integer id,  UserIsActive userIsActive){
         return ResponseEntity.ok(userService.banUser(id, userIsActive));

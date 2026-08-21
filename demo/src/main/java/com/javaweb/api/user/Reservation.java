@@ -15,16 +15,19 @@ import java.util.List;
 public class Reservation {
     private final ReservationService bookingService;
 
+    // Lay lich su dat ban cua nguoi dung hien tai.
     @GetMapping(value = "/user/reservation/me")
     public List<BookingResponse> myBooking(){
         return  bookingService.myReservationHistory();
     }
 
+    // Tao yeu cau dat ban moi cho nguoi dung.
     @PostMapping(value = "/booking/me")
     public ResponseEntity<String> createBooking(@RequestBody BookingRequest bookingRequest){
         return ResponseEntity.ok(bookingService.createBooking(bookingRequest));
     }
 
+    // Huy yeu cau dat ban cua nguoi dung theo id.
     @DeleteMapping(value = "/booking/me/{id}")
     public ResponseEntity<String> deleteBooking(@PathVariable Integer id){
         return ResponseEntity.ok(bookingService.cancelBooking(id));
