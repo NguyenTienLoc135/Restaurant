@@ -5,6 +5,7 @@ import com.javaweb.security.JwtAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,6 +27,19 @@ public class WebSecurityConfig {
     private String SECRET_KEY;
 
     @Bean
+    @Order(1)
+    SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/public/**")
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
+                );
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtDecoder jwtDecoder,
                                             CustomJwtAuthConverter customJwtAuthConverter,
@@ -33,7 +47,6 @@ public class WebSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/staff/**").hasAuthority("ROLE_STAFF")
                         .requestMatchers(HttpMethod.GET, "/orders", "/orders/").hasAuthority("ROLE_STAFF")
                         .requestMatchers(HttpMethod.PUT, "/orders/{id}").hasAuthority("ROLE_STAFF")
