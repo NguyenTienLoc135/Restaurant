@@ -12,6 +12,9 @@
 }
 
 .menu-page {
+  --page-inline: 5%;
+  --card-width: clamp(200px, 24vw, 300px);
+  --detail-width: clamp(300px, 44vw, 560px);
   background: #edeae3;
   min-height: 100vh;
   font-family: "DM Sans", Arial, sans-serif;
@@ -48,7 +51,7 @@
   box-shadow: 0 4px 16px rgba(26,32,46,0.08);
   display: flex;
   gap: 0;
-  padding: 0 60px;
+  padding: 0 var(--page-inline);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -91,7 +94,7 @@
 }
 
 .section-header {
-  padding: 0 60px;
+  padding: 0 var(--page-inline);
   margin-bottom: 28px;
   display: flex;
   align-items: baseline;
@@ -113,7 +116,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   width: 100%;
-  padding-left: 60px;
+  padding-left: var(--page-inline);
   cursor: grab;
   user-select: none;
   /* hide scrollbar */
@@ -130,7 +133,7 @@
   display: flex;
   gap: 24px;
   /* enough padding so last card doesn't hug edge */
-  padding-right: 60px;
+  padding-right: var(--page-inline);
   width: max-content;
 }
 
@@ -139,7 +142,7 @@
 ══════════════════════════════════════ */
 .dish-card {
   flex-shrink: 0;
-  width: 300px;
+  width: 100%;
   cursor: pointer;
   transition: transform 0.3s ease;
 }
@@ -196,7 +199,7 @@
 ══════════════════════════════════════ */
 .others-row {
   margin-top: 32px;
-  padding: 0 60px;
+  padding: 0 var(--page-inline);
   display: flex;
   align-items: flex-start;
   gap: 20px;
@@ -236,7 +239,7 @@
 
 /* NEWS */
 .footer-news {
-  padding: 56px 60px 48px;
+  padding: 56px var(--page-inline) 48px;
   border-bottom: 1px solid rgba(26,32,46,0.08);
 }
 
@@ -316,7 +319,7 @@
 .footer-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 48px 60px;
+  padding: 48px var(--page-inline);
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 60px;
@@ -381,7 +384,7 @@
 .footer-bottom {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 18px 60px;
+  padding: 18px var(--page-inline);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -401,18 +404,23 @@
    RESPONSIVE
 ══════════════════════════════════════ */
 @media (max-width: 900px) {
-  .section-header, .scroll-viewport, .others-row,
-  .footer-news, .footer-inner, .footer-bottom { padding-left: 28px; padding-right: 28px; }
-  .category-nav { padding: 0 20px; }
+  .menu-page {
+    --page-inline: 4%;
+    --card-width: clamp(200px, 30vw, 240px);
+    --detail-width: min(84vw, 520px);
+  }
   .footer-news-grid { grid-template-columns: 1fr 1fr; }
   .fn-view-all { grid-column: 1 / -1; justify-content: flex-end; }
   .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
-  .dish-card { width: 240px; }
 }
 
 @media (max-width: 560px) {
+  .menu-page {
+    --page-inline: 4.5%;
+    --card-width: min(82vw, 300px);
+    --detail-width: min(86vw, 300px);
+  }
   .section-title  { font-size: 28px; }
-  .dish-card      { width: 200px; }
   .footer-news-grid { grid-template-columns: 1fr; }
   .footer-inner   { grid-template-columns: 1fr; }
   .footer-bottom  { flex-direction: column; gap: 12px; align-items: flex-start; }
@@ -433,7 +441,7 @@
 
 .mc-inner {
   max-width: 100%;
-  padding: 18px 60px 0;
+  padding: 18px var(--page-inline) 0;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -443,7 +451,8 @@
 /* ── SEARCH ── */
 .mc-search-wrap {
   position: relative;
-  flex: 0 0 320px;
+  flex: 1 1 32%;
+  min-width: min(100%, 320px);
 }
 
 .mc-search-box {
@@ -541,7 +550,7 @@
 
 /* ── PRICE SLIDER ── */
 .mc-slider-row {
-  padding: 14px 60px 16px;
+  padding: 14px var(--page-inline) 16px;
   border-top: 1px solid rgba(15,32,68,0.06);
 }
 
@@ -549,7 +558,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  max-width: 640px;
+  max-width: min(100%, 640px);
 }
 
 .mc-slider-label {
@@ -627,16 +636,16 @@
   flex-shrink: 0;
   display: flex;
   transition: width 0.4s cubic-bezier(0.34,1.1,0.64,1);
-  width: 300px;
+  width: var(--card-width);
 }
 
 .dish-card-wrap.is-expanded {
-  width: 560px;
+  width: var(--detail-width);
 }
 
 .dish-card {
   flex-shrink: 0;
-  width: 300px;
+  width: 100%;
   cursor: pointer;
   transition: transform 0.3s ease;
   position: relative;
@@ -703,7 +712,7 @@
 
 /* ── DETAIL PANEL ── */
 .dish-detail-panel {
-  width: 560px;
+  width: 100%;
   background: white;
   border-radius: 8px;
   overflow: hidden;
@@ -802,7 +811,7 @@
    FILTERED GRID
 ════════════════════════════════════════ */
 .filtered-section {
-  padding: 40px 60px 80px;
+  padding: 40px var(--page-inline) 80px;
   background: var(--sand);
 }
 
@@ -885,16 +894,15 @@
 
 /* responsive */
 @media (max-width: 900px) {
-  .mc-inner { padding: 14px 28px 0; }
-  .mc-slider-row { padding: 12px 28px 14px; }
   .mc-search-wrap { flex: 1 1 200px; }
-  .filtered-section { padding: 32px 28px 60px; }
+  .filtered-section { padding-top: 32px; padding-bottom: 60px; }
 }
 @media (max-width: 600px) {
   .mc-inner { flex-direction: column; align-items: stretch; }
   .mc-search-wrap { flex: none; }
-  .dish-detail-panel { width: 300px; }
-  .dish-card-wrap.is-expanded { width: 300px; }
+  .dish-card-wrap,
+  .dish-card-wrap.is-expanded,
+  .dish-detail-panel { width: var(--detail-width); }
 }
 
 /* dual range slider stacking */

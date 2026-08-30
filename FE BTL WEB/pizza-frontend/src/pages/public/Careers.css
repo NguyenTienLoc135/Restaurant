@@ -7,6 +7,8 @@
   --gold:  #c8a96e;
   --cream: #f5f0e8;
   --muted: #6b7280;
+  --careers-inline: clamp(24px, 6%, 80px);
+  --careers-hero-inline: clamp(24px, 6%, 80px);
 }
 
 .cr-page {
@@ -19,7 +21,7 @@
 .cr-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 80px;
+  padding: 0 var(--careers-inline);
 }
 
 /* ── shared labels & titles ── */
@@ -99,7 +101,7 @@
   left: 0;
   transform: translateY(calc(-50% + 36px));
   z-index: 2;
-  padding: 0 80px;
+  padding: 0 var(--careers-hero-inline);
   color: white;
   max-width: 860px;
   opacity: 0;
@@ -168,7 +170,7 @@
 .cr-hero-stats {
   position: absolute;
   bottom: 52px;
-  right: 80px;
+  right: var(--careers-hero-inline);
   z-index: 3;
   display: flex;
   gap: 12px;
@@ -182,7 +184,7 @@
   padding: 18px 24px;
   color: white;
   text-align: center;
-  min-width: 100px;
+  min-width: clamp(80px, 9vw, 100px);
 }
 .cr-stat-card strong {
   display: block;
@@ -519,7 +521,7 @@
 .cr-open-inner {
   max-width: 700px;
   margin: 0 auto;
-  padding: 120px 80px;
+  padding: 120px var(--careers-inline);
   text-align: center;
   position: relative;
   z-index: 1;
@@ -580,7 +582,10 @@
    RESPONSIVE
 ════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .cr-container { padding: 0 48px; }
+  :root {
+    --careers-inline: clamp(24px, 5%, 48px);
+    --careers-hero-inline: clamp(24px, 5%, 48px);
+  }
   .cr-values-grid   { grid-template-columns: 1fr; }
   .cr-value-card    { border-right: none; border-bottom: 1px solid rgba(15,32,68,0.1); padding: 40px 0; }
   .cr-value-card:last-child { border-bottom: none; }
@@ -590,15 +595,17 @@
 }
 
 @media (max-width: 768px) {
-  .cr-container     { padding: 0 24px; }
-  .cr-hero-content  { padding: 0 24px; }
-  .cr-hero-stats    { right: 24px; bottom: 32px; }
+  :root {
+    --careers-inline: clamp(20px, 6%, 24px);
+    --careers-hero-inline: clamp(20px, 6%, 24px);
+  }
+  .cr-hero-stats    { bottom: 32px; }
   .cr-stat-card     { min-width: 80px; padding: 14px 16px; }
   .cr-values        { padding: 80px 0; }
   .cr-benefits      { padding: 80px 0; }
   .cr-jobs          { padding: 80px 0; }
   .cr-benefits-grid { grid-template-columns: 1fr; }
-  .cr-open-inner    { padding: 80px 24px; }
+  .cr-open-inner    { padding: 80px var(--careers-inline); }
   .cr-job-header    { padding: 22px 20px; }
   .cr-job-desc      { padding: 20px 20px 16px; }
   .cr-job-actions   { padding: 0 20px 22px; flex-direction: column; align-items: flex-start; }

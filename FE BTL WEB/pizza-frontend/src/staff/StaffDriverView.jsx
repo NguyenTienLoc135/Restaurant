@@ -1,73 +1,209 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import {
+  claimDriverOrderApi,
+  completeDriverOrderApi,
+  getDriverAvailableOrdersApi,
+  getDriverDeliveredOrdersApi,
+  getDriverDeliveringOrdersApi,
+} from "../services/driverApi"
+import { getApiErrorMessage } from "../services/apiClient"
+import { normalizeOrderList } from "../services/responseAdapters"
 
-function loadOrders() {
-  try {
-    const staff = JSON.parse(localStorage.getItem("hs_staff_orders") || "null")
-    return (staff || []).filter(o => ["Đang chuẩn bị","Đã giao cho shipper","Chờ xác nhận"].includes(o.status))
-  } catch { return [] }
+function getDriverStatusLabel(order) {
+  switch (order.statusCode) {
+    case "DELIVERY":
+      return "Chờ nhận đơn"
+    case "DELIVERING":
+      return "Đang giao hàng"
+    case "COMPLETED":
+      return "Đã giao thành công"
+    case "CANCELLED":
+    case "INCOMPLETE":
+      return "Khách không nhận món"
+    default:
+      return order.status || "Chờ nhận đơn"
+  }
+}
+
+function getDriverBadge(order) {
+  switch (order.statusCode) {
+    case "COMPLETED":
+      return "green"
+    case "CANCELLED":
+    case "INCOMPLETE":
+      return "red"
+    case "DELIVERING":
+      return "blue"
+    default:
+      return "yellow"
+  }
+}
+
+function DriverSection({ title, emptyText, orders, renderActions }) {
+  return (
+    <section style={{ marginTop: 28 }}>
+      <div className="sm-header" style={{ marginBottom: 16 }}>
+        <div>
+          <h3 className="sm-title" style={{ fontSize: 28 }}>{title}</h3>
+        </div>
+      </div>
+
+      {orders.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "36px 0", color: "#9ca3af" }}>
+          <p style={{ fontSize: 16 }}>{emptyText}</p>
+        </div>
+      ) : (
+        <div className="smd-grid">
+          {orders.map(order => (
+            <div key={order.id} className="smd-card">
+              <div className="smd-card-header">
+                <span className="smd-id">{order.id}</span>
+                <span className={`sm-badge ${getDriverBadge(order)}`}>{getDriverStatusLabel(order)}</span>
+              </div>
+              <div className="smd-info">
+                <p>Khách: {order.customer || "Khách online"}</p>
+                <p>Địa chỉ: {order.address || "-"}</p>
+                <p>SDT: {order.phone || "-"}</p>
+                <p>Món: {order.items}</p>
+                {order.notes ? <p>Ghi chú: {order.notes}</p> : null}
+                <p style={{ fontWeight: 700, color: "#0f2044", marginTop: 8 }}>Tổng: {order.total}</p>
+              </div>
+              <div className="smd-actions">{renderActions(order)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
 }
 
 export default function StaffDriverView() {
-  const [orders, setOrders] = useState(loadOrders)
-  const [claimed, setClaimed] = useState({})
+  const [orders, setOrders] = useState([])
+  const [error, setError] = useState("")
 
-  function claimOrder(id) {
-    setClaimed(c => ({ ...c, [id]: true }))
-    const all = JSON.parse(localStorage.getItem("hs_staff_orders") || "[]")
-    const updated = all.map(o => o.id === id ? { ...o, status: "Đã giao cho shipper" } : o)
-    localStorage.setItem("hs_staff_orders", JSON.stringify(updated))
-    setOrders(updated.filter(o => ["Đang chuẩn bị","Đã giao cho shipper","Chờ xác nhận"].includes(o.status)))
+  useEffect(() => {
+    let active = true
+
+    async function loadDriverOrders() {
+      try {
+        const [available, delivering, delivered] = await Promise.all([
+          getDriverAvailableOrdersApi().catch(() => []),
+          getDriverDeliveringOrdersApi().catch(() => []),
+          getDriverDeliveredOrdersApi().catch(() => []),
+        ])
+
+        if (!active) return
+        setOrders(normalizeOrderList([...available, ...delivering, ...delivered]))
+        setError("")
+      } catch (apiError) {
+        if (!active) return
+        setError(getApiErrorMessage(apiError, "Không thể tải đơn giao hàng"))
+      }
+    }
+
+    loadDriverOrders()
+    const intervalId = window.setInterval(loadDriverOrders, 8000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  async function claimOrder(id) {
+    try {
+      const numericId = Number(String(id).replace("#4P", ""))
+      await claimDriverOrderApi(numericId)
+      setOrders(current =>
+        current.map(order =>
+          order.id === id ? { ...order, statusCode: "DELIVERING", status: "Đang giao hàng" } : order
+        )
+      )
+      setError("")
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, "Không thể nhận đơn"))
+    }
   }
 
-  function completeOrder(id) {
-    const all = JSON.parse(localStorage.getItem("hs_staff_orders") || "[]")
-    const updated = all.map(o => o.id === id ? { ...o, status: "Đã hoàn thành" } : o)
-    localStorage.setItem("hs_staff_orders", JSON.stringify(updated))
-    setOrders(updated.filter(o => ["Đang chuẩn bị","Đã giao cho shipper","Chờ xác nhận"].includes(o.status)))
+  async function finishOrder(id, status) {
+    try {
+      const numericId = Number(String(id).replace("#4P", ""))
+      await completeDriverOrderApi(numericId, status)
+      setOrders(current =>
+        current.map(order =>
+          order.id === id
+            ? {
+                ...order,
+                statusCode: status,
+                status: status === "COMPLETED" ? "Đã hoàn thành" : "Đã hủy",
+              }
+            : order
+        )
+      )
+      setError("")
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, "Không thể cập nhật giao hàng"))
+    }
   }
+
+  const availableOrders = useMemo(
+    () => orders.filter(order => order.statusCode === "DELIVERY"),
+    [orders]
+  )
+
+  const deliveringOrders = useMemo(
+    () => orders.filter(order => order.statusCode === "DELIVERING"),
+    [orders]
+  )
+
+  const resolvedOrders = useMemo(
+    () => orders.filter(order => ["COMPLETED", "CANCELLED", "INCOMPLETE"].includes(order.statusCode)),
+    [orders]
+  )
 
   return (
     <div className="sm-page">
       <div className="sm-header">
         <div>
-          <h2 className="sm-title">Đơn cần giao</h2>
-          <p className="sm-sub">Nhận đơn và xác nhận giao thành công</p>
+          <h2 className="sm-title">Vận hành giao hàng</h2>
+          <p className="sm-sub">Driver nhận đơn, xác nhận đang giao, giao thành công hoặc báo khách không nhận món ngay tại đây.</p>
         </div>
       </div>
+      {error && <p className="co-err">{error}</p>}
 
-      {orders.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "#9ca3af" }}>
-          <p style={{ fontSize: 48 }}>🛵</p>
-          <p style={{ fontSize: 17, marginTop: 16 }}>Không có đơn hàng nào cần giao</p>
-        </div>
-      ) : (
-        <div className="smd-grid">
-          {orders.map(o => (
-            <div key={o.id} className="smd-card">
-              <div className="smd-card-header">
-                <span className="smd-id">{o.id}</span>
-                <span className={`sm-badge ${o.status === "Đã giao cho shipper" ? "green" : "yellow"}`}>{o.status}</span>
-              </div>
-              <div className="smd-info">
-                <p>👤 {o.customer || "Khách online"}</p>
-                <p>📍 {o.address || "—"}</p>
-                <p>📞 {o.phone || "—"}</p>
-                <p>🍕 {o.items}</p>
-                <p style={{ fontWeight: 700, color: "#0f2044", marginTop: 8 }}>💰 {o.total}</p>
-              </div>
-              <div className="smd-actions">
-                {o.status !== "Đã giao cho shipper" ? (
-                  <button className="sm-btn" onClick={() => claimOrder(o.id)}>🛵 Nhận đơn này</button>
-                ) : (
-                  <button className="sm-btn" style={{ background: "#16a34a" }} onClick={() => completeOrder(o.id)}>
-                    ✅ Giao thành công
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <DriverSection
+        title="Đơn chờ tài xế nhận"
+        emptyText="Không có đơn hàng nào đang chờ nhận"
+        orders={availableOrders}
+        renderActions={order => (
+          <button className="sm-btn" onClick={() => claimOrder(order.id)}>
+            Nhận đơn này
+          </button>
+        )}
+      />
+
+      <DriverSection
+        title="Đơn đang giao"
+        emptyText="Hiện chưa có đơn nào đang trên đường giao"
+        orders={deliveringOrders}
+        renderActions={order => (
+          <>
+            <button className="sm-btn" style={{ background: "#16a34a" }} onClick={() => finishOrder(order.id, "COMPLETED")}>
+              Giao thành công
+            </button>
+            <button className="sm-btn sm-btn-sm danger" onClick={() => finishOrder(order.id, "CANCELLED")}>
+              Khách không nhận món
+            </button>
+          </>
+        )}
+      />
+
+      <DriverSection
+        title="Lịch sử giao hàng"
+        emptyText="Chưa có đơn đã hoàn tất hoặc bị hủy"
+        orders={resolvedOrders}
+        renderActions={() => null}
+      />
     </div>
   )
 }

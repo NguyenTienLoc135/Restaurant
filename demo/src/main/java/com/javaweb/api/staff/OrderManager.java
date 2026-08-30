@@ -31,10 +31,10 @@ public class OrderManager {
 
     // Cap nhat trang thai don hang theo quy trinh van hanh.
     @PutMapping(value = "/orders/{id}")
-    public ResponseEntity<String> updateOrder(@PathVariable Integer id, OrderStatus status) {
+    public ResponseEntity<String> updateOrder(@PathVariable Integer id,
+                                              @RequestParam OrderStatus status) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id,status));
     }
 
 
 }
-

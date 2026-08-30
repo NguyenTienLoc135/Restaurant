@@ -2,7 +2,10 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 import { useAuth } from "../../context/AuthContext"
+import { useMenu } from "../../context/MenuContext"
 import "./Checkout.css"
+
+const JAVA_INT_MAX = 2147483647
 
 const PAYMENT_METHODS = [
   { id: "cod", label: "Tiền mặt khi nhận", icon: "💵", desc: "Thanh toán trực tiếp cho shipper" },
@@ -23,12 +26,13 @@ const DELIVERY_FEE = 15000
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
-  const { addOrder } = useAuth()
+  const { addOrder, user } = useAuth()
+  const { isBackendSynced } = useMenu()
   const navigate = useNavigate()
 
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [address, setAddress] = useState("")
+  const [name, setName] = useState(user?.name || "")
+  const [phone, setPhone] = useState(user?.phone || "")
+  const [address, setAddress] = useState(user?.address || "")
   const [district, setDistrict] = useState("")
   const [time, setTime] = useState("")
   const [asap, setAsap] = useState(true)
@@ -36,6 +40,7 @@ export default function Checkout() {
   const [notes, setNotes] = useState("")
   const [success, setSuccess] = useState(false)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState("")
 
   const deliveryFee = subtotal >= 199000 ? 0 : DELIVERY_FEE
   const total = subtotal + deliveryFee
@@ -50,26 +55,58 @@ export default function Checkout() {
     return nextErrors
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const nextErrors = validate()
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
       return
     }
 
-    setSuccess(true)
-    addOrder({
-      items: items.map(item => item.name).join(", "),
-      total: total.toLocaleString("vi-VN") + "₫",
+    setSubmitError("")
+
+    if (!isBackendSynced) {
+      setSubmitError("Menu chua dong bo voi backend. Vui long tai lai trang va thu lai sau khi server san sang.")
+      return
+    }
+
+    const normalizedItems = items.map(item => ({
+      id: Number(item.id),
+      amount: item.qty,
+      name: item.name,
+    }))
+
+    const invalidItem = normalizedItems.find(
+      item => !Number.isInteger(item.id) || item.id <= 0 || item.id > JAVA_INT_MAX
+    )
+
+    if (invalidItem) {
+      setSubmitError(
+        `Mon "${invalidItem.name}" co ma khong hop le de dong bo voi backend. Vui long quay lai menu, xoa mon nay khoi gio va them lai.`
+      )
+      return
+    }
+
+    const result = await addOrder({
+      items: normalizedItems.map(item => ({
+        id: item.id,
+        amount: item.amount,
+      })),
+      notes,
       customer: name,
       phone,
       address: `${address}, ${district}`,
       district,
       payment,
-      notes,
       deliveryTime: asap ? "Giao ngay" : time,
+      total: total.toLocaleString("vi-VN") + "₫",
     })
 
+    if (!result.ok) {
+      setSubmitError(result.message || "Không thể đặt hàng")
+      return
+    }
+
+    setSuccess(true)
     setTimeout(() => {
       clearCart()
       navigate("/")
@@ -95,14 +132,14 @@ export default function Checkout() {
             <div className="co-grid-2">
               <div className={`co-field ${errors.name ? "error" : ""}`}>
                 <label>Họ và tên *</label>
-                <input value={name} onChange={e => { setName(e.target.value); setErrors(prev => ({ ...prev, name: "" })) }} placeholder="Nguyễn Văn A" />
+                <input value={name} onChange={event => { setName(event.target.value); setErrors(prev => ({ ...prev, name: "" })) }} placeholder="Nguyễn Văn A" />
                 {errors.name && <span className="co-err">{errors.name}</span>}
               </div>
               <div className={`co-field ${errors.phone ? "error" : ""}`}>
                 <label>Số điện thoại *</label>
                 <div className="co-phone-wrap">
                   <span>🇻🇳 +84</span>
-                  <input value={phone} onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: "" })) }} placeholder="0123 456 789" />
+                  <input value={phone} onChange={event => { setPhone(event.target.value); setErrors(prev => ({ ...prev, phone: "" })) }} placeholder="0123 456 789" />
                 </div>
                 {errors.phone && <span className="co-err">{errors.phone}</span>}
               </div>
@@ -113,9 +150,9 @@ export default function Checkout() {
             <h2 className="co-section-h">02 · Địa chỉ giao hàng</h2>
             <div className={`co-field ${errors.district ? "error" : ""}`}>
               <label>Quận / Huyện *</label>
-              <select value={district} onChange={e => { setDistrict(e.target.value); setErrors(prev => ({ ...prev, district: "" })) }}>
+              <select value={district} onChange={event => { setDistrict(event.target.value); setErrors(prev => ({ ...prev, district: "" })) }}>
                 <option value="">Chọn quận...</option>
-                {["Hoàn Kiếm", "Ba Đình", "Đống Đa", "Hai Bà Trưng", "Tây Hồ", "Cầu Giấy"].map(item => (
+                {["Hoàn Kiếm", "Ba Đình", "Đống Đa", "Hai Bà Trưng", "Tây Hồ", "Cầu Giấy", "Thanh Xuân", "Long Biên", "Hà Đông", "Nam Từ Liêm", "Bắc Từ Liêm"].map(item => (
                   <option key={item} value={item}>{item}</option>
                 ))}
               </select>
@@ -123,7 +160,7 @@ export default function Checkout() {
             </div>
             <div className={`co-field ${errors.address ? "error" : ""}`}>
               <label>Địa chỉ cụ thể *</label>
-              <input value={address} onChange={e => { setAddress(e.target.value); setErrors(prev => ({ ...prev, address: "" })) }} placeholder="Số nhà, tên đường, toà nhà, tầng..." />
+              <input value={address} onChange={event => { setAddress(event.target.value); setErrors(prev => ({ ...prev, address: "" })) }} placeholder="Số nhà, tên đường, tòa nhà, tầng..." />
               {errors.address && <span className="co-err">{errors.address}</span>}
             </div>
           </div>
@@ -133,7 +170,7 @@ export default function Checkout() {
             <div className="co-time-toggle">
               <button className={`co-time-opt ${asap ? "active" : ""}`} onClick={() => setAsap(true)}>
                 <span className="co-time-opt-icon">⚡</span>
-                <div><strong>Giao ngay</strong><small>30–45 phút</small></div>
+                <div><strong>Giao ngay</strong><small>30-45 phút</small></div>
               </button>
               <button className={`co-time-opt ${!asap ? "active" : ""}`} onClick={() => setAsap(false)}>
                 <span className="co-time-opt-icon">🕐</span>
@@ -143,7 +180,7 @@ export default function Checkout() {
             {!asap && (
               <div className={`co-field ${errors.time ? "error" : ""}`} style={{ marginTop: 16 }}>
                 <label>Chọn giờ giao *</label>
-                <select value={time} onChange={e => { setTime(e.target.value); setErrors(prev => ({ ...prev, time: "" })) }}>
+                <select value={time} onChange={event => { setTime(event.target.value); setErrors(prev => ({ ...prev, time: "" })) }}>
                   <option value="">Chọn giờ...</option>
                   {TIME_SLOTS.map(item => <option key={item} value={item}>{item}</option>)}
                 </select>
@@ -173,9 +210,10 @@ export default function Checkout() {
             <h2 className="co-section-h">05 · Ghi chú cho bếp</h2>
             <div className="co-field">
               <label>Ghi chú <span>(không bắt buộc)</span></label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="VD: Ít muối, không hành, dị ứng hải sản..." rows={3} />
+              <textarea value={notes} onChange={event => setNotes(event.target.value)} placeholder="VD: Ít muối, không hành, dị ứng hải sản..." rows={3} />
             </div>
           </div>
+          {submitError && <p className="co-err">{submitError}</p>}
         </div>
 
         <div className="co-summary">
@@ -213,7 +251,7 @@ export default function Checkout() {
           <div className="co-success-box">
             <div className="co-success-icon">🛵</div>
             <h2>Đặt hàng thành công!</h2>
-            <p>Đơn hàng của bạn đang được chuẩn bị.<br />Shipper sẽ đến trong <strong>30–45 phút</strong>.</p>
+            <p>Đơn hàng của bạn đang được chuẩn bị.<br />Shipper sẽ đến trong <strong>30-45 phút</strong>.</p>
             <div className="co-success-bar" />
           </div>
         </div>

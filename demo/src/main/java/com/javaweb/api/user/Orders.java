@@ -1,5 +1,6 @@
 package com.javaweb.api.user;
 
+import com.javaweb.model.request.OrderCancelRequest;
 import com.javaweb.model.request.OrderRequest;
 import com.javaweb.model.response.OrderDetailResponse;
 import com.javaweb.model.response.OrderResponse;
@@ -35,9 +36,10 @@ public class Orders {
         return ResponseEntity.ok(orderService.createMyOrder(orderRequest));
     }
 
-    // Huy hoac xoa don hang cua chinh nguoi dung theo id.
-    @DeleteMapping(value = "/orders/{id}")
-    public ResponseEntity<String> deleteOrders(@PathVariable Integer id){
-        return ResponseEntity.ok(orderService.deleteMyOrder(id));
+    // Huy don hang cua chinh nguoi dung va luu ly do huy.
+    @PutMapping(value = "/orders/{id}/cancel")
+    public ResponseEntity<String> cancelOrders(@PathVariable Integer id,
+                                               @Valid @RequestBody OrderCancelRequest request){
+        return ResponseEntity.ok(orderService.cancelMyOrder(id, request));
     }
 }

@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react"
+﻿import { useMemo, useState } from "react"
 import { useMenu } from "../context/MenuContext"
 import { MENU_STATUS } from "../data/menuData"
 import { isCloudinaryConfigured, uploadImageToCloudinary } from "../services/cloudinary"
 
 const BLANK = {
-  cat: "pizza",
+  cat: "main_course",
   name: "",
   desc: "",
   price: "",
@@ -26,6 +26,7 @@ export default function StaffMenuManager() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState("")
   const [uploadNotice, setUploadNotice] = useState("")
+  const [submitError, setSubmitError] = useState("")
 
   const cloudinaryReady = isCloudinaryConfigured()
   const displayed = useMemo(
@@ -37,6 +38,7 @@ export default function StaffMenuManager() {
     setForm(BLANK)
     setUploadError("")
     setUploadNotice("")
+    setSubmitError("")
     setModal("add")
   }
 
@@ -48,6 +50,7 @@ export default function StaffMenuManager() {
     })
     setUploadError("")
     setUploadNotice("")
+    setSubmitError("")
     setModal("edit")
   }
 
@@ -56,24 +59,33 @@ export default function StaffMenuManager() {
     setUploading(false)
     setUploadError("")
     setUploadNotice("")
+    setSubmitError("")
   }
 
   function setField(key, value) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  function saveItem() {
+  async function saveItem() {
     if (!form.name.trim() || !form.price) return
+
+    if (form.img?.startsWith("data:image/")) {
+      setSubmitError("Ảnh đang ở dạng tạm trong trình duyệt. Hãy cấu hình Cloudinary hoặc thay bằng link ảnh trước khi lưu.")
+      return
+    }
 
     const payload = {
       ...form,
       badge: form.badge.trim() || null,
     }
 
-    if (modal === "add") createItem(payload)
-    else updateItem(form.id, payload)
-
-    closeModal()
+    try {
+      if (modal === "add") await createItem(payload)
+      else await updateItem(form.id, payload)
+      closeModal()
+    } catch (error) {
+      setSubmitError(error?.response?.data || error?.message || "Không thể lưu món")
+    }
   }
 
   async function handleImageUpload(event) {
@@ -155,7 +167,7 @@ export default function StaffMenuManager() {
             <div className="smm-img">
               <img src={item.img || "https://via.placeholder.com/300x200?text=No+Image"} alt={item.name} />
               <span className={`smm-status-badge ${item.status === MENU_STATUS.available ? "green" : "red"}`}>
-                {item.status}
+                {item.status === MENU_STATUS.available ? "Có sẵn" : "Hết món"}
               </span>
             </div>
             <div className="smm-body">
@@ -168,7 +180,11 @@ export default function StaffMenuManager() {
               <button className="sm-btn sm-btn-sm outline" onClick={() => openEdit(item)}>Sửa</button>
               <button
                 className={`sm-btn sm-btn-sm ${item.status === MENU_STATUS.available ? "danger" : "outline"}`}
-                onClick={() => toggleItemStatus(item.id)}
+                onClick={async () => {
+                  try {
+                    await toggleItemStatus(item.id)
+                  } catch {}
+                }}
               >
                 {item.status === MENU_STATUS.available ? "Hết món" : "Có sẵn"}
               </button>
@@ -250,6 +266,7 @@ export default function StaffMenuManager() {
                 {uploading && <p style={{ marginTop: 8, color: "#1a3f7a" }}>Đang tải ảnh...</p>}
                 {uploadNotice && <p style={{ marginTop: 8, color: "#166534", lineHeight: 1.6 }}>{uploadNotice}</p>}
                 {uploadError && <p style={{ marginTop: 8, color: "#b91c1c" }}>{uploadError}</p>}
+                {submitError && <p style={{ marginTop: 8, color: "#b91c1c" }}>{submitError}</p>}
                 {form.imagePublicId && (
                   <p style={{ marginTop: 8, color: "#6b7280", wordBreak: "break-all" }}>
                     Cloudinary public_id: {form.imagePublicId}
@@ -304,7 +321,18 @@ export default function StaffMenuManager() {
             </div>
             <div className="sm-modal-footer">
               <button className="sm-btn outline" onClick={() => setConfirmDel(null)}>Hủy</button>
-              <button className="sm-btn danger" onClick={() => { deleteItem(confirmDel.id); setConfirmDel(null) }}>Xóa</button>
+              <button
+                className="sm-btn danger"
+                onClick={async () => {
+                  try {
+                    await deleteItem(confirmDel.id)
+                  } finally {
+                    setConfirmDel(null)
+                  }
+                }}
+              >
+                Xóa
+              </button>
             </div>
           </div>
         </div>

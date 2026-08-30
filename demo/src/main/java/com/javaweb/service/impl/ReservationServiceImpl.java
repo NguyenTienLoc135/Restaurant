@@ -57,8 +57,10 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER')")
     public String updateReservation(Integer id, BookingStatus bookingStatus){
-       Booking booking = bookingRepository.getOne(id);
+       Booking booking = bookingRepository.findById(id)
+               .orElseThrow(() -> new DataNotFoundException("khong tim thay booking"));
        booking.setStatus(bookingStatus);
+       bookingRepository.save(booking);
        return "updated";
     }
 
@@ -122,4 +124,3 @@ public class ReservationServiceImpl implements ReservationService {
         return "Da xoa don dat ban";
     }
 }
-

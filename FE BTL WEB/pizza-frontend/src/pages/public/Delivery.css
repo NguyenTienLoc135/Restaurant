@@ -5,6 +5,8 @@
   --sand:  #ede8df;
   --cream: #f5f0e8;
   --muted: #6b7280;
+  --delivery-inline: clamp(24px, 6%, 80px);
+  --delivery-hero-inline: clamp(24px, 6%, 80px);
 }
 
 .delivery-page {
@@ -17,7 +19,7 @@
 .dv-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 80px;
+  padding: 0 var(--delivery-inline);
 }
 
 .dv-label {
@@ -136,7 +138,7 @@
 .dv-hero-content {
   position: relative;
   z-index: 2;
-  padding: 0 80px;
+  padding: 0 var(--delivery-hero-inline);
   color: white;
   max-width: 800px;
   opacity: 0;
@@ -196,7 +198,7 @@
 .dv-badge {
   position: absolute;
   bottom: 48px;
-  right: 80px;
+  right: var(--delivery-hero-inline);
   z-index: 3;
   display: flex;
   align-items: center;
@@ -310,7 +312,7 @@
 .dv-promo-inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 80px 80px;
+  padding: 80px var(--delivery-inline);
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
@@ -357,8 +359,8 @@
 }
 
 .dv-promo-circle {
-  width: 160px;
-  height: 160px;
+  width: clamp(120px, 14vw, 160px);
+  height: clamp(120px, 14vw, 160px);
   border-radius: 50%;
   border: 2px solid var(--gold);
   display: flex;
@@ -645,22 +647,27 @@
    RESPONSIVE
 ════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .dv-container  { padding: 0 48px; }
+  :root {
+    --delivery-inline: clamp(24px, 5%, 48px);
+    --delivery-hero-inline: clamp(24px, 5%, 48px);
+  }
   .dv-steps-grid { grid-template-columns: repeat(2, 1fr); }
   .dv-step-arrow { display: none; }
   .dv-zones-grid { grid-template-columns: repeat(2, 1fr); }
-  .dv-promo-inner { padding: 64px 48px; }
+  .dv-promo-inner { padding: 64px var(--delivery-inline); }
 }
 
 @media (max-width: 768px) {
-  .dv-container        { padding: 0 24px; }
-  .dv-hero-content     { padding: 0 24px; }
-  .dv-badge            { right: 24px; bottom: 32px; }
+  :root {
+    --delivery-inline: clamp(20px, 6%, 24px);
+    --delivery-hero-inline: clamp(20px, 6%, 24px);
+  }
+  .dv-badge            { bottom: 32px; }
   .dv-steps            { padding: 64px 0; }
   .dv-steps-grid       { grid-template-columns: 1fr; }
   .dv-step             { border-right: none; border-bottom: 1px solid rgba(15,32,68,0.1); }
   .dv-zones-grid       { grid-template-columns: 1fr; }
-  .dv-promo-inner      { grid-template-columns: 1fr; padding: 48px 24px; gap: 40px; }
+  .dv-promo-inner      { grid-template-columns: 1fr; padding: 48px var(--delivery-inline); gap: 40px; }
   .dv-promo-visual     { display: none; }
   .dv-faq-q            { font-size: 16px; padding: 20px 0; }
 }

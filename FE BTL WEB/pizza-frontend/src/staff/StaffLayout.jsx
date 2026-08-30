@@ -6,12 +6,15 @@ import StaffOrderManager from "./StaffOrderManager"
 import StaffBookingManager from "./StaffBookingManager"
 import StaffDriverView from "./StaffDriverView"
 import StaffProfileManager from "./StaffProfileManager"
+import StaffCustomerManager from "./StaffCustomerManager"
 import "./StaffLayout.css"
 
 const NAV_STAFF = [
   { key: "orders", icon: "📦", label: "Đơn hàng" },
   { key: "bookings", icon: "🍽️", label: "Đặt bàn" },
-  { key: "menu", icon: "🍕", label: "Quản lý Menu" },
+  { key: "customers", icon: "👥", label: "Khách hàng" },
+  { key: "menu", icon: "🍕", label: "Quản lý menu" },
+  { key: "driver", icon: "🛵", label: "Quản lý driver" },
   { key: "profile", icon: "👤", label: "Tài khoản" },
 ]
 
@@ -20,23 +23,13 @@ const NAV_DRIVER = [
   { key: "profile", icon: "👤", label: "Tài khoản" },
 ]
 
-const NAV_ADMIN = [
-  { key: "orders", icon: "📦", label: "Đơn hàng" },
-  { key: "bookings", icon: "🍽️", label: "Đặt bàn" },
-  { key: "menu", icon: "🍕", label: "Quản lý Menu" },
-  { key: "driver", icon: "🛵", label: "Quản lý tài xế" },
-  { key: "profile", icon: "👤", label: "Tài khoản" },
-]
-
 const ROLE_LABEL = {
   staff: "Nhân viên",
-  admin: "Quản trị viên",
   driver: "Tài xế",
 }
 
 const ROLE_COLOR = {
   staff: "#1a3f7a",
-  admin: "#c8a96e",
   driver: "#16a34a",
 }
 
@@ -51,7 +44,7 @@ export default function StaffLayout() {
     return null
   }
 
-  const navItems = staff.role === "driver" ? NAV_DRIVER : staff.role === "admin" ? NAV_ADMIN : NAV_STAFF
+  const navItems = staff.role === "driver" ? NAV_DRIVER : NAV_STAFF
 
   function handleLogout() {
     staffLogout()
@@ -86,7 +79,7 @@ export default function StaffLayout() {
               </div>
             </div>
           </button>
-          <button className="sdl-logout" onClick={handleLogout}>Đăng xuất ↩</button>
+          <button className="sdl-logout" onClick={handleLogout}>Đăng xuất</button>
         </div>
       </header>
 
@@ -100,9 +93,9 @@ export default function StaffLayout() {
                 onClick={() => openTab(item.key)}
               >
                 <span className="sdl-nav-icon">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
+              <span>{item.label}</span>
+            </button>
+          ))}
           </nav>
 
           <div className="sdl-sidebar-footer">
@@ -115,6 +108,7 @@ export default function StaffLayout() {
         <main className="sdl-main">
           {tab === "orders" && <StaffOrderManager />}
           {tab === "bookings" && <StaffBookingManager />}
+          {tab === "customers" && <StaffCustomerManager />}
           {tab === "menu" && <StaffMenuManager />}
           {tab === "driver" && <StaffDriverView />}
           {tab === "profile" && <StaffProfileManager />}

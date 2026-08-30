@@ -4,6 +4,9 @@
   --cream: #f5f0e8;
   --gold:  #c8a96e;
   --muted: #6b7280;
+  --about-inline: clamp(24px, 6%, 80px);
+  --about-split-inline: clamp(24px, 5.5%, 72px);
+  --about-quote-inline: clamp(20px, 4%, 40px);
 }
 
 .about-page {
@@ -60,7 +63,7 @@
 .ab-hero-content {
   position: relative;
   z-index: 2;
-  padding: 0 80px 96px;
+  padding: 0 var(--about-inline) 96px;
   color: white;
   opacity: 0;
   transform: translateY(32px);
@@ -141,7 +144,7 @@
 ════════════════════════════════════════ */
 .ab-intro {
   background: var(--cream);
-  padding: 120px 80px;
+  padding: 120px var(--about-inline);
 }
 
 .ab-intro-inner {
@@ -254,7 +257,7 @@
   text-align: center;
   max-width: 900px;
   line-height: 1.45;
-  padding: 0 40px;
+  padding: 0 var(--about-quote-inline);
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 1s ease, transform 1s ease;
@@ -289,7 +292,7 @@
 ════════════════════════════════════════ */
 .ab-pillars {
   background: var(--navy);
-  padding: 120px 80px;
+  padding: 120px var(--about-inline);
 }
 
 .ab-pillars-header {
@@ -408,7 +411,7 @@
 
 .ab-split-content {
   background: var(--sand);
-  padding: 80px 72px;
+  padding: 80px var(--about-split-inline);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -486,7 +489,7 @@
 ════════════════════════════════════════ */
 .ab-stats {
   background: var(--cream);
-  padding: 80px;
+  padding: 80px var(--about-inline);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid rgba(15,32,68,0.1);
@@ -501,7 +504,7 @@
 }
 
 .ab-stat {
-  padding: 40px 48px;
+  padding: 40px clamp(24px, 4%, 48px);
   border-right: 1px solid rgba(15,32,68,0.1);
   opacity: 0;
   transform: translateY(20px);
@@ -589,22 +592,32 @@
    RESPONSIVE
 ════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .ab-intro        { padding: 80px 48px; }
-  .ab-pillars      { padding: 80px 48px; }
-  .ab-stats        { padding: 40px; grid-template-columns: repeat(2, 1fr); }
+  :root {
+    --about-inline: clamp(24px, 5%, 48px);
+    --about-split-inline: clamp(24px, 4.5%, 48px);
+    --about-quote-inline: clamp(18px, 4%, 32px);
+  }
+  .ab-intro        { padding: 80px var(--about-inline); }
+  .ab-pillars      { padding: 80px var(--about-inline); }
+  .ab-stats        { padding: 40px var(--about-inline); grid-template-columns: repeat(2, 1fr); }
   .ab-stat         { border-bottom: 1px solid rgba(15,32,68,0.1); }
 }
 
 @media (max-width: 768px) {
-  .ab-hero-content   { padding: 0 32px 72px; }
-  .ab-intro          { padding: 64px 32px; }
+  :root {
+    --about-inline: clamp(20px, 6%, 32px);
+    --about-split-inline: clamp(20px, 6%, 32px);
+    --about-quote-inline: clamp(16px, 5%, 24px);
+  }
+  .ab-hero-content   { padding: 0 var(--about-inline) 72px; }
+  .ab-intro          { padding: 64px var(--about-inline); }
   .ab-intro-inner    { grid-template-columns: 1fr; gap: 40px; }
   .ab-intro-right    { padding-top: 0; }
-  .ab-pillars        { padding: 64px 32px; }
+  .ab-pillars        { padding: 64px var(--about-inline); }
   .ab-pillars-grid   { grid-template-columns: 1fr; gap: 48px; }
   .ab-split          { grid-template-columns: 1fr; }
   .ab-split-media    { height: 320px; }
-  .ab-split-content  { padding: 48px 32px; }
-  .ab-stats          { padding: 32px; grid-template-columns: repeat(2, 1fr); }
+  .ab-split-content  { padding: 48px var(--about-split-inline); }
+  .ab-stats          { padding: 32px var(--about-inline); grid-template-columns: repeat(2, 1fr); }
   .ab-stat           { padding: 24px; }
 }

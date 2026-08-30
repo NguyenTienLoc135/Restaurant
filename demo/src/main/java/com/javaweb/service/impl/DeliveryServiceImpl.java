@@ -10,14 +10,13 @@ import com.javaweb.repository.UserRepository;
 import com.javaweb.security.CurrentUserProvider;
 import com.javaweb.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +25,6 @@ import java.util.List;
 public class DeliveryServiceImpl implements DeliveryService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
-    private final ModelMapper modelMapper;
     private final CurrentUserProvider currentUserProvider;
 
     private Integer getAuthenticatedDriverId() {
@@ -35,13 +33,21 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     private OrderResponse toOrderResponse(Order order) {
-        OrderResponse response = modelMapper.map(order, OrderResponse.class);
+        OrderResponse response = new OrderResponse();
         User customer = order.getCustomer();
         User driver = order.getDriver();
+        response.setId(order.getId());
+        response.setCustomerId(customer != null ? customer.getId() : null);
         response.setUsername(customer != null ? customer.getUsername() : null);
         response.setUserPhone(customer != null ? customer.getPhone() : null);
         response.setDriverName(driver != null ? driver.getUsername() : null);
         response.setDriverPhone(driver != null ? driver.getPhone() : null);
+        response.setOrderTime(order.getOrderTime());
+        response.setAddress(order.getAddress());
+        response.setNote(order.getNote());
+        response.setItemsTotal(order.getItemsTotal());
+        response.setDeliveryFee(order.getDeliveryFee());
+        response.setStatus(order.getStatus());
         BigDecimal itemsTotal = order.getItemsTotal();
         BigDecimal deliveryFee = order.getDeliveryFee();
         if (itemsTotal != null && deliveryFee != null) {
@@ -72,11 +78,8 @@ public class DeliveryServiceImpl implements DeliveryService {
     public List<OrderResponse> getDeliveryOrders() {
         List<Order> orders = orderRepository.findAll();
         List<OrderResponse> results = new ArrayList<>();
-        LocalDate today = LocalDate.now();
         for (Order order : orders) {
-            if (OrderStatus.DELIVERY.equals(order.getStatus())
-                    && order.getOrderTime() != null
-                    && order.getOrderTime().toLocalDate().equals(today)) {
+            if (OrderStatus.DELIVERY.equals(order.getStatus())) {
                 results.add(toOrderResponse(order));
             }
         }
@@ -88,7 +91,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     @PreAuthorize("hasAuthority('ROLE_DRIVER')")
     public List<OrderResponse> DeliveriedOrders() {
         Integer userId = getAuthenticatedDriverId();
-        return findDriverOrdersByStatus(userId, OrderStatus.COMPLETED);
+        List<OrderResponse> completed = findDriverOrdersByStatus(userId, OrderStatus.COMPLETED);
+        completed.addAll(findDriverOrdersByStatus(userId, OrderStatus.CANCELLED));
+        completed.addAll(findDriverOrdersByStatus(userId, OrderStatus.INCOMPLETE));
+        return completed;
     }
 
     @Override
@@ -103,6 +109,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_DRIVER')")
     public String DeliveryUpdate(Integer orderId, OrderStatus status) {
+        Integer userId = getAuthenticatedDriverId();
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new DataNotFoundException("Order not found"));
 
@@ -110,8 +117,18 @@ public class DeliveryServiceImpl implements DeliveryService {
             throw new IllegalStateException("Only delivering orders can be updated");
         }
 
-        if (!OrderStatus.COMPLETED.equals(status) && !OrderStatus.INCOMPLETE.equals(status)) {
-            throw new IllegalArgumentException("Status must be COMPLETED or INCOMPLETE");
+        if (order.getDriver() == null || !userId.equals(order.getDriver().getId())) {
+            throw new AccessDeniedException("Forbidden");
+        }
+
+        if (!OrderStatus.COMPLETED.equals(status)
+                && !OrderStatus.CANCELLED.equals(status)
+                && !OrderStatus.INCOMPLETE.equals(status)) {
+            throw new IllegalArgumentException("Status must be COMPLETED, CANCELLED or INCOMPLETE");
+        }
+
+        if (OrderStatus.INCOMPLETE.equals(status)) {
+            status = OrderStatus.CANCELLED;
         }
 
         order.setStatus(status);
@@ -138,5 +155,4 @@ public class DeliveryServiceImpl implements DeliveryService {
         return "claim success";
     }
 }
-
 

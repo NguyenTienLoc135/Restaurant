@@ -1,6 +1,7 @@
 package com.javaweb.service;
 
 import com.javaweb.enums.OrderStatus;
+import com.javaweb.model.request.OrderCancelRequest;
 import com.javaweb.model.request.OrderRequest;
 import com.javaweb.model.response.OrderDetailResponse;
 import com.javaweb.model.response.OrderResponse;
@@ -33,5 +34,5 @@ public interface OrderService {
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
-    String deleteMyOrder(Integer id);
+    String cancelMyOrder(Integer id, OrderCancelRequest request);
 }

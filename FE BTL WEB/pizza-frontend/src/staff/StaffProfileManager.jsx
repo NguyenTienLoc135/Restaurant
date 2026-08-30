@@ -25,7 +25,7 @@ export default function StaffProfileManager() {
     })
   }, [staff])
 
-  function handleInfoSubmit(event) {
+  async function handleInfoSubmit(event) {
     event.preventDefault()
 
     if (!info.name.trim()) {
@@ -38,14 +38,14 @@ export default function StaffProfileManager() {
       return
     }
 
-    const result = updateStaffProfile(info)
+    const result = await updateStaffProfile(info)
     setInfoState({
       type: result.ok ? "success" : "error",
       message: result.ok ? "Đã cập nhật thông tin nhân viên." : result.message,
     })
   }
 
-  function handlePasswordSubmit(event) {
+  async function handlePasswordSubmit(event) {
     event.preventDefault()
 
     if (!password.current) {
@@ -63,7 +63,7 @@ export default function StaffProfileManager() {
       return
     }
 
-    const result = changeStaffPassword(password.current, password.next)
+    const result = await changeStaffPassword(password.current, password.next)
     setPasswordState({
       type: result.ok ? "success" : "error",
       message: result.ok ? "Đã đổi mật khẩu thành công." : result.message,

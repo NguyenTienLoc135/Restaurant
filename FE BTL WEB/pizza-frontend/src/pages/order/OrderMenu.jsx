@@ -5,18 +5,18 @@ import { useMenu } from "../../context/MenuContext"
 import { MENU_STATUS } from "../../data/menuData"
 import "./OrderMenu.css"
 
-const ALL_PRICES = [109000,198000,172000,334000,145000,118000,95000,88000,254000,298000,331000,238000,276000,218000,265000,165000,254000,194000,210000,325000,485000,115000,98000,78000,88000,105000,72000,98000,98000,85000,85000,145000,155000,112000]
-const OM_PRICE_MAX = Math.ceil(Math.max(...ALL_PRICES) / 50000) * 50000
-
 const SORT_TABS = [
-  { key: "default",    label: "Mặc định" },
-  { key: "price_asc",  label: "Giá tăng dần ↑" },
+  { key: "default", label: "Mặc định" },
+  { key: "price_asc", label: "Giá tăng dần ↑" },
   { key: "price_desc", label: "Giá giảm dần ↓" },
 ]
 
 const BADGE_COLOR = {
-  "Bán chạy": "#c8a96e", "Đặc biệt": "#1a3f7a",
-  "Mới": "#22c55e", "Thuần chay": "#16a34a", Signature: "#7c3aed",
+  "Bán chạy": "#c8a96e",
+  "Đặc biệt": "#1a3f7a",
+  "Mới": "#22c55e",
+  "Thuần chay": "#16a34a",
+  Signature: "#7c3aed",
 }
 
 function highlight(text, query) {
@@ -30,63 +30,71 @@ function highlight(text, query) {
 }
 
 export default function OrderMenu() {
-  const { categories, items } = useMenu()
-  const [cat,        setCat]        = useState("all")
-  const [sort,       setSort]       = useState("default")
-  const [search,     setSearch]     = useState("")
-  const [showSuggest,setShowSuggest]= useState(false)
+  const { categories, items, searchItems } = useMenu()
+  const [cat, setCat] = useState("all")
+  const [availability, setAvailability] = useState("true")
+  const [sort, setSort] = useState("default")
+  const [search, setSearch] = useState("")
+  const [showSuggest, setShowSuggest] = useState(false)
   const { addItem, totalItems, subtotal } = useCart()
-  const [added,      setAdded]      = useState({})
-  const navigate  = useNavigate()
+  const [added, setAdded] = useState({})
+  const navigate = useNavigate()
   const searchRef = useRef(null)
 
-  // ── price range ──
   const PRICE_MAX = useMemo(() => {
     if (!items.length) return 500000
-    return Math.ceil(Math.max(...items.map(i => i.price)) / 50000) * 50000
+    return Math.ceil(Math.max(...items.map(item => item.price)) / 50000) * 50000
   }, [items])
 
   const [priceMin, setPriceMin] = useState(0)
   const [priceMax, setPriceMax] = useState(PRICE_MAX)
 
-  // sync khi PRICE_MAX thay đổi (data load)
-  useEffect(() => { setPriceMax(PRICE_MAX) }, [PRICE_MAX])
+  useEffect(() => {
+    setPriceMax(PRICE_MAX)
+  }, [PRICE_MAX])
 
   const minPct = (priceMin / PRICE_MAX) * 100
   const maxPct = (priceMax / PRICE_MAX) * 100
   const isPriceFiltered = priceMin > 0 || priceMax < PRICE_MAX
 
-  function handleMinChange(e) {
-    const v = Number(e.target.value)
-    if (v <= priceMax - 50000) setPriceMin(v)
+  function handleMinChange(event) {
+    const value = Number(event.target.value)
+    if (value <= priceMax - 50000) setPriceMin(value)
   }
-  function handleMaxChange(e) {
-    const v = Number(e.target.value)
-    if (v >= priceMin + 50000) setPriceMax(v)
+
+  function handleMaxChange(event) {
+    const value = Number(event.target.value)
+    if (value >= priceMin + 50000) setPriceMax(value)
   }
-  function resetPrice() { setPriceMin(0); setPriceMax(PRICE_MAX) }
+
+  function resetPrice() {
+    setPriceMin(0)
+    setPriceMax(PRICE_MAX)
+  }
 
   useEffect(() => {
-    function handler(e) {
-      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggest(false)
+    function handler(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) setShowSuggest(false)
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
+  const builder = {
+    name: search,
+    category: cat === "all" ? "" : cat,
+    leftPrice: priceMin,
+    rightPrice: priceMax,
+    isAvailable: availability,
+  }
+
   const suggestions = useMemo(() => {
     if (!search.trim()) return []
-    const q = search.toLowerCase()
-    return items.filter(i => i.name.toLowerCase().includes(q) || i.desc.toLowerCase().includes(q)).slice(0, 8)
-  }, [items, search])
+    return searchItems(builder).slice(0, 8)
+  }, [builder.category, builder.isAvailable, builder.leftPrice, builder.name, builder.rightPrice, searchItems, search])
 
-  let filtered = cat === "all" ? items : items.filter(i => i.cat === cat)
-  if (search.trim()) {
-    const q = search.toLowerCase()
-    filtered = filtered.filter(i => i.name.toLowerCase().includes(q) || i.desc.toLowerCase().includes(q))
-  }
-  filtered = filtered.filter(i => i.price >= priceMin && i.price <= priceMax)
-  if (sort === "price_asc")  filtered = [...filtered].sort((a, b) => a.price - b.price)
+  let filtered = searchItems(builder)
+  if (sort === "price_asc") filtered = [...filtered].sort((a, b) => a.price - b.price)
   if (sort === "price_desc") filtered = [...filtered].sort((a, b) => b.price - a.price)
 
   function handleAdd(item) {
@@ -96,7 +104,12 @@ export default function OrderMenu() {
     setTimeout(() => setAdded(prev => ({ ...prev, [item.id]: false })), 800)
   }
 
-  function clearAll() { setSearch(""); setCat("all"); resetPrice() }
+  function clearAll() {
+    setSearch("")
+    setCat("all")
+    setAvailability("true")
+    resetPrice()
+  }
 
   return (
     <div className="om-page">
@@ -120,15 +133,15 @@ export default function OrderMenu() {
           </button>
         </div>
 
-        {/* SEARCH */}
         <div className="om-search-row">
           <div className="om-search-box" ref={searchRef}>
             <div className={`om-search-wrap ${showSuggest && suggestions.length ? "open" : ""}`}>
               <input
-                className="om-search-input" type="text"
+                className="om-search-input"
+                type="text"
                 placeholder="Tìm tên món, nguyên liệu..."
                 value={search}
-                onChange={e => { setSearch(e.target.value); setShowSuggest(true) }}
+                onChange={event => { setSearch(event.target.value); setShowSuggest(true) }}
                 onFocus={() => setShowSuggest(true)}
               />
               {search && (
@@ -149,50 +162,41 @@ export default function OrderMenu() {
           </div>
         </div>
 
-        {/* CATEGORY TABS */}
         <div className="om-tabs">
           <button className={`om-tab ${cat === "all" ? "active" : ""}`} onClick={() => setCat("all")}>Tất cả</button>
-          {categories.map(c => (
-            <button key={c.key} className={`om-tab ${cat === c.key ? "active" : ""}`} onClick={() => setCat(c.key)}>
-              {c.label}
+          {categories.map(category => (
+            <button key={category.key} className={`om-tab ${cat === category.key ? "active" : ""}`} onClick={() => setCat(category.key)}>
+              {category.label}
             </button>
           ))}
         </div>
 
-        {/* SORT + PRICE RANGE */}
+        <div className="om-tabs" style={{ paddingTop: 0 }}>
+          <button className={`om-tab ${availability === "" ? "active" : ""}`} onClick={() => setAvailability("")}>Tất cả trạng thái</button>
+          <button className={`om-tab ${availability === "true" ? "active" : ""}`} onClick={() => setAvailability("true")}>Có sẵn</button>
+          <button className={`om-tab ${availability === "false" ? "active" : ""}`} onClick={() => setAvailability("false")}>Hết món</button>
+        </div>
+
         <div className="om-sort-bar">
           <span className="om-sort-label">SẮP XẾP:</span>
-          {SORT_TABS.map(s => (
-            <button key={s.key} className={`om-sort-tab ${sort === s.key ? "active" : ""}`} onClick={() => setSort(s.key)}>
-              {s.label}
+          {SORT_TABS.map(item => (
+            <button key={item.key} className={`om-sort-tab ${sort === item.key ? "active" : ""}`} onClick={() => setSort(item.key)}>
+              {item.label}
             </button>
           ))}
 
-          {/* Divider */}
           <div className="om-sort-divider" />
 
-          {/* PRICE RANGE SLIDER */}
           <div className="om-price-range">
             <span className="om-price-label">Khoảng giá:</span>
             <span className="om-price-val om-price-min">{priceMin.toLocaleString("vi-VN")}₫</span>
 
             <div className="om-slider-wrap">
               <div className="om-slider-track">
-                <div
-                  className="om-slider-fill"
-                  style={{ left: minPct + "%", width: (maxPct - minPct) + "%" }}
-                />
+                <div className="om-slider-fill" style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }} />
               </div>
-              <input
-                type="range" className="om-slider om-slider-min"
-                min={0} max={PRICE_MAX} step={10000}
-                value={priceMin} onChange={handleMinChange}
-              />
-              <input
-                type="range" className="om-slider om-slider-max"
-                min={0} max={PRICE_MAX} step={10000}
-                value={priceMax} onChange={handleMaxChange}
-              />
+              <input type="range" className="om-slider om-slider-min" min={0} max={PRICE_MAX} step={10000} value={priceMin} onChange={handleMinChange} />
+              <input type="range" className="om-slider om-slider-max" min={0} max={PRICE_MAX} step={10000} value={priceMax} onChange={handleMaxChange} />
             </div>
 
             <span className="om-price-val">{priceMax.toLocaleString("vi-VN")}₫</span>
@@ -204,7 +208,6 @@ export default function OrderMenu() {
         </div>
       </div>
 
-      {/* GRID */}
       <div className="om-grid-wrap">
         {filtered.length === 0 ? (
           <div className="om-no-result">
@@ -215,11 +218,7 @@ export default function OrderMenu() {
         ) : (
           <div className="om-grid">
             {filtered.map(item => (
-              <div
-                key={item.id}
-                className="om-card"
-                style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.75 : 1 }}
-              >
+              <div key={item.id} className="om-card" style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.75 : 1 }}>
                 <div className="om-card-img">
                   <img src={item.img} alt={item.name} draggable="false" />
                   {item.badge && (

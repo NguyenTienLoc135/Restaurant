@@ -10,5 +10,5 @@ public class UserUpdateRequest {
     private String fullname;
     private String phone;
     private String address;
-   // private UserGender gender;
+    private UserGender gender;
 }

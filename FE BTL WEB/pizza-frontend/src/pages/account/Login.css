@@ -1,4 +1,6 @@
 .ln-page {
+  --auth-side-inline: clamp(32px, 5%, 56px);
+  --auth-form-inline: clamp(24px, 4.5%, 32px);
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -44,7 +46,7 @@
 
 .ln-panel-content {
   position: relative; z-index: 1;
-  padding: 48px 56px;
+  padding: 48px var(--auth-side-inline);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -112,7 +114,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 32px;
+  padding: 48px var(--auth-form-inline);
   overflow-y: auto;
 }
 
@@ -315,5 +317,6 @@
 @media (max-width: 900px) {
   .ln-page { grid-template-columns: 1fr; }
   .ln-panel { display: none; }
-  .ln-form-side { padding: 80px 24px 48px; }
+  .ln-page { --auth-form-inline: clamp(20px, 6%, 24px); }
+  .ln-form-side { padding: 80px var(--auth-form-inline) 48px; }
 }

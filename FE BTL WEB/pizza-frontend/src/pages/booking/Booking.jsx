@@ -31,10 +31,10 @@ function AddressChip({ restaurant }) {
 }
 
 function Booking() {
-  const { addBooking } = useAuth()
+  const { addBooking, user } = useAuth()
 
   const restaurant = {
-    name: "Pizza 4P's Ba Đình",
+    name: "Hải SAPA Ba Đình",
     address: "175 Nguyễn Thái Học, Ba Đình, Hà Nội",
     map: "https://www.google.com/maps?q=175%20Nguyen%20Thai%20Hoc%20Ba%20Dinh%20Hanoi&output=embed",
     mapLink: "https://maps.google.com/?q=175%20Nguyen%20Thai%20Hoc%20Ba%20Dinh%20Hanoi",
@@ -47,12 +47,13 @@ function Booking() {
   const [loading, setLoading] = useState(false)
 
   const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
+  const [lastName, setLastName] = useState(user?.name || "")
+  const [email, setEmail] = useState(user?.email || "")
+  const [phone, setPhone] = useState(user?.phone || "")
   const [notify, setNotify] = useState(false)
   const [success, setSuccess] = useState(false)
   const [cancelled, setCancelled] = useState(false)
+  const [submitError, setSubmitError] = useState("")
 
   const HOLD = 900
   const [timeLeft, setTimeLeft] = useState(HOLD)
@@ -82,10 +83,10 @@ function Booking() {
   const percent = (timeLeft / HOLD) * 100
 
   const times = []
-  for (let h = 9; h <= 22; h++) {
-    ;["00", "15", "30", "45"].forEach(m => {
-      if (h === 22 && m !== "00") return
-      times.push(`${h}:${m}`)
+  for (let hour = 9; hour <= 22; hour++) {
+    ;["00", "15", "30", "45"].forEach(minute => {
+      if (hour === 22 && minute !== "00") return
+      times.push(`${hour}:${minute}`)
     })
   }
 
@@ -107,27 +108,30 @@ function Booking() {
     setAvailable(null)
     setTimeLeft(HOLD)
     setFirstName("")
-    setLastName("")
-    setEmail("")
-    setPhone("")
+    setLastName(user?.name || "")
+    setEmail(user?.email || "")
+    setPhone(user?.phone || "")
     setCancelled(true)
     setTimeout(() => setCancelled(false), 2500)
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!firstName || !lastName || !email || !phone) {
       alert("Vui lòng nhập đầy đủ thông tin")
       return
     }
 
-    clearInterval(timerRef.current)
-    setCountdownActive(false)
-    setSuccess(true)
+    setSubmitError("")
 
-    addBooking({
+    const dateParts = time.split(":")
+    const bookingDate = new Date(date)
+    bookingDate.setHours(Number(dateParts[0] || 0), Number(dateParts[1] || 0), 0, 0)
+
+    const result = await addBooking({
+      bookingDate: bookingDate.toISOString().slice(0, 19),
       date: date.toLocaleDateString("vi-VN"),
-      time: time || "—",
-      guests: people,
+      time: time || "--:--",
+      guests: Number(people),
       name: `${lastName} ${firstName}`.trim(),
       phone,
       email,
@@ -135,14 +139,23 @@ function Booking() {
       note: notify ? "Nhận xác nhận qua tin nhắn" : "",
     })
 
+    if (!result.ok) {
+      setSubmitError(result.message || "Không thể đặt bàn")
+      return
+    }
+
+    clearInterval(timerRef.current)
+    setCountdownActive(false)
+    setSuccess(true)
+
     setTimeout(() => {
       setSuccess(false)
       setAvailable(null)
       setTimeLeft(HOLD)
       setFirstName("")
-      setLastName("")
-      setEmail("")
-      setPhone("")
+      setLastName(user?.name || "")
+      setEmail(user?.email || "")
+      setPhone(user?.phone || "")
       setTime("")
     }, 3500)
   }
@@ -162,7 +175,7 @@ function Booking() {
             <span>NỘI</span>
           </h1>
           <div className="city-line" />
-          <p className="city-brand">Pizza 4P's</p>
+          <p className="city-brand">Hải SAPA</p>
           <p className="city-branch">Ba Đình</p>
         </div>
 
@@ -176,21 +189,21 @@ function Booking() {
             <div className="search-row">
               <div className="sfield">
                 <label>Số người</label>
-                <select value={people} onChange={e => setPeople(e.target.value)}>
-                  {Array.from({ length: 29 }, (_, i) => (
-                    <option key={i} value={i + 2}>{i + 2} người</option>
+                <select value={people} onChange={event => setPeople(event.target.value)}>
+                  {Array.from({ length: 29 }, (_, index) => (
+                    <option key={index} value={index + 2}>{index + 2} người</option>
                   ))}
                 </select>
               </div>
 
               <div className="sfield">
                 <label>Ngày</label>
-                <DatePicker selected={date} onChange={d => setDate(d)} dateFormat="dd/MM/yyyy" minDate={new Date()} />
+                <DatePicker selected={date} onChange={nextDate => setDate(nextDate)} dateFormat="dd/MM/yyyy" minDate={new Date()} />
               </div>
 
               <div className="sfield">
                 <label>Giờ</label>
-                <select value={time} onChange={e => setTime(e.target.value)}>
+                <select value={time} onChange={event => setTime(event.target.value)}>
                   <option value="">Chọn giờ</option>
                   {times.map(item => <option key={item}>{item}</option>)}
                 </select>
@@ -230,30 +243,32 @@ function Booking() {
               <div className="cust-grid">
                 <div className="cf">
                   <label>Tên *</label>
-                  <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Nhập tên" />
+                  <input value={firstName} onChange={event => setFirstName(event.target.value)} placeholder="Nhập tên" />
                 </div>
                 <div className="cf">
                   <label>Họ *</label>
-                  <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nhập họ" />
+                  <input value={lastName} onChange={event => setLastName(event.target.value)} placeholder="Nhập họ" />
                 </div>
                 <div className="cf cf-full">
                   <label>Email *</label>
-                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="example@email.com" type="email" />
+                  <input value={email} onChange={event => setEmail(event.target.value)} placeholder="example@email.com" type="email" />
                 </div>
                 <div className="cf">
                   <label>Số điện thoại *</label>
                   <div className="phone-wrap">
                     <span className="phone-code">🇻🇳 +84</span>
-                    <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0123 456 789" />
+                    <input value={phone} onChange={event => setPhone(event.target.value)} placeholder="0123 456 789" />
                   </div>
                 </div>
                 <div className="cf cf-check">
                   <label className="chk-label">
-                    <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} />
+                    <input type="checkbox" checked={notify} onChange={event => setNotify(event.target.checked)} />
                     Nhận xác nhận qua tin nhắn
                   </label>
                 </div>
               </div>
+
+              {submitError && <p className="cancel-toast" style={{ background: "#fef2f2", color: "#b91c1c" }}>{submitError}</p>}
 
               <div className="action-row">
                 <button className="cancel-btn" onClick={handleCancel}>Huỷ đặt bàn</button>

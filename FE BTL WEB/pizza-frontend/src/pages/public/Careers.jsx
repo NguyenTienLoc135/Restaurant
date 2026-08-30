@@ -16,7 +16,7 @@ function useInView(threshold = 0.15) {
 }
 
 const DEPARTMENTS = ["Tất cả", "Bếp", "Phục vụ", "Quản lý", "Marketing", "Vận hành"]
-const LOCATIONS   = ["Hoàn Kiếm", "Ba Đình", "Đống Đa", "Hai Bà Trưng", "Tây Hồ", "Cầu Giấy","Bắc Từ Liêm", "Nam Từ Liêm", "Hà Đông", "Hoàng Mai", "Long Biên"]
+const LOCATIONS   = ["Ba Đình"]
 
 const JOBS = [
   {

@@ -1,21 +1,25 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { useStaff } from "../staff/StaffContext"
 import "./Navbar.css"
 
 function Navbar() {
-  const [open,       setOpen]       = useState(false)
-  const [scrolled,   setScrolled]   = useState(false)
+  const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const navigate  = useNavigate()
-  const location  = useLocation()
+  const navigate = useNavigate()
+  const location = useLocation()
   const auth = useAuth()
+  const staffAuth = useStaff()
   const user = auth?.user ?? null
-  const logout = auth?.logout ?? (() => {})
+  const staff = staffAuth?.staff ?? null
+  const activeAccount = staff || user
+  const logout = staff ? (staffAuth?.staffLogout ?? (() => {})) : (auth?.logout ?? (() => {}))
   const dropdownRef = useRef(null)
 
   const lightPages = ["/menu", "/about", "/vision", "/careers", "/library", "/order", "/cart", "/checkout", "/login", "/profile"]
-  const isLight = lightPages.some(p => location.pathname.startsWith(p))
+  const isLight = lightPages.some(page => location.pathname.startsWith(page))
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40)
@@ -25,26 +29,42 @@ function Navbar() {
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : ""
-    return () => { document.body.style.overflow = "" }
+    return () => {
+      document.body.style.overflow = ""
+    }
   }, [open])
 
-  // close dropdown on outside click
   useEffect(() => {
-    function handler(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
+    function handler(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setUserMenuOpen(false)
+      }
     }
+
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  const goTo = (path) => { setOpen(false); setUserMenuOpen(false); navigate(path) }
+  function goTo(path) {
+    setOpen(false)
+    setUserMenuOpen(false)
+    navigate(path)
+  }
 
   function handleLogout() {
     logout()
     setUserMenuOpen(false)
     navigate("/")
   }
+
+  const dropdownItems = staff
+    ? [{ icon: "Admin", label: "Trang staff", path: "/staff/dashboard" }]
+    : [
+        { icon: "👨‍🍳", label: "Tài khoản", path: "/profile" },
+        { icon: "📝", label: "Đơn hàng của tôi", path: "/profile?tab=orders" },
+        { icon: "💻", label: "Đặt bàn của tôi", path: "/profile?tab=bookings" },
+        { icon: "🔑", label: "Đổi mật khẩu", path: "/profile?tab=password" },
+      ]
 
   return (
     <>
@@ -60,13 +80,13 @@ function Navbar() {
               <div className="navbar-right">
                 <div className="nav-links">
                   <button className="nav-link" onClick={() => goTo("/booking")}>
-                    <span className="nav-link-icon">⊞</span> Đặt bàn
+                    <span className="nav-link-icon">⁕</span> Đặt Bàn
                   </button>
                   <button className="nav-link" onClick={() => goTo("/order")}>
-                    <span className="nav-link-icon">◎</span> Giao Hàng
+                    <span className="nav-link-icon">⁂</span> Giao Hàng
                   </button>
                   <button className="nav-link" onClick={() => goTo("/careers")}>
-                    <span className="nav-link-icon">◈</span> Tuyển dụng
+                    <span className="nav-link-icon">⌀</span> Tuyển Dụng
                   </button>
 
                   <div className="lang-toggle">
@@ -75,36 +95,27 @@ function Navbar() {
                     <span className="lang-inactive">EN</span>
                   </div>
 
-                  {/* ── USER AREA ── */}
-                  {user ? (
+                  {activeAccount ? (
                     <div className="nav-user-wrap" ref={dropdownRef}>
-                      <button
-                        className="nav-user-btn"
-                        onClick={() => setUserMenuOpen(s => !s)}
-                      >
-                        <div className="nav-user-avatar">{user.avatar}</div>
-                        <span className="nav-user-name">{user.name}</span>
+                      <button className="nav-user-btn" onClick={() => setUserMenuOpen(current => !current)}>
+                        <div className="nav-user-avatar">{activeAccount.avatar}</div>
+                        <span className="nav-user-name">{activeAccount.name}</span>
                         <svg className={`nav-user-chevron ${userMenuOpen ? "open" : ""}`} width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
                       </button>
 
                       {userMenuOpen && (
                         <div className="nav-dropdown">
                           <div className="nav-dd-header">
-                            <div className="nav-dd-avatar">{user.avatar}</div>
+                            <div className="nav-dd-avatar">{activeAccount.avatar}</div>
                             <div>
-                              <p className="nav-dd-name">{user.name}</p>
-                              <p className="nav-dd-email">{user.email}</p>
+                              <p className="nav-dd-name">{activeAccount.name}</p>
+                              <p className="nav-dd-email">{activeAccount.email}</p>
                             </div>
                           </div>
                           <div className="nav-dd-divider" />
-                          {[
-                            { icon: "👤", label: "Thông tin tài khoản", path: "/profile" },
-                            { icon: "📦", label: "Đơn hàng của tôi",    path: "/profile?tab=orders" },
-                            { icon: "🍽️", label: "Đặt bàn của tôi",     path: "/profile?tab=bookings" },
-                            { icon: "🔒", label: "Đổi mật khẩu",        path: "/profile?tab=password" },
-                          ].map(item => (
+                          {dropdownItems.map(item => (
                             <button key={item.label} className="nav-dd-item" onClick={() => goTo(item.path)}>
                               <span className="nav-dd-icon">{item.icon}</span>
                               {item.label}
@@ -112,7 +123,7 @@ function Navbar() {
                           ))}
                           <div className="nav-dd-divider" />
                           <button className="nav-dd-item nav-dd-logout" onClick={handleLogout}>
-                            <span className="nav-dd-icon">↩</span>
+                            <span className="nav-dd-icon">❌</span>
                             Đăng xuất
                           </button>
                         </div>
@@ -121,15 +132,15 @@ function Navbar() {
                   ) : (
                     <button className="nav-login-btn" onClick={() => goTo("/login")}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
                       </svg>
                       Đăng nhập
                     </button>
                   )}
                 </div>
 
-                <button className="hamburger" onClick={() => setOpen(true)} aria-label="Mở menu">
+                <button className="hamburger" onClick={() => setOpen(true)} aria-label="Mo menu">
                   <span className="bar bar-1" />
                   <span className="bar bar-2" />
                   <span className="bar bar-3" />
@@ -139,50 +150,58 @@ function Navbar() {
           )}
 
           {open && (
-            <button className="close-btn" onClick={() => setOpen(false)} aria-label="Đóng menu">
-              <span /><span />
+            <button className="close-btn" onClick={() => setOpen(false)} aria-label="Dong menu">
+              <span />
+              <span />
             </button>
           )}
         </div>
       </nav>
 
-      {/* FULLSCREEN MENU */}
       <div className={`fullscreen-menu ${open ? "is-visible" : ""}`}>
         <div className="fm-inner">
           <div className="fm-col fm-primary">
-            {[["Review Shop", "/about"], ["Thực đơn", "/menu"]].map(([label, path], i) => (
-              <button key={label} className="fm-link fm-link-large" style={{ "--i": i }} onClick={() => goTo(path)}>
-                <span className="fm-link-num">0{i + 1}</span>
+            {[["Review Shop", "/about"], ["Thuc don", "/menu"]].map(([label, path], index) => (
+              <button key={label} className="fm-link fm-link-large" style={{ "--i": index }} onClick={() => goTo(path)}>
+                <span className="fm-link-num">0{index + 1}</span>
                 {label}
-                <span className="fm-link-arrow">→</span>
+                <span className="fm-link-arrow">-</span>
               </button>
             ))}
           </div>
+
           <div className="fm-col fm-secondary">
-            {[["Tuyển dụng", "/careers"]].map(([label, path]) => (
+            {[["Tuyen dung", "/careers"]].map(([label, path]) => (
               <button key={label} className="fm-link fm-link-large" style={{ "--i": 5 }} onClick={() => goTo(path)}>
                 <span className="fm-link-num">03</span>
                 {label}
-                <span className="fm-link-arrow">→</span>
+                <span className="fm-link-arrow">-</span>
               </button>
             ))}
+
             <div className="fm-divider" />
+
             {[
-              user ? ["Tài khoản của tôi", "/profile"] : ["Đăng nhập / Đăng ký", "/login"],
-              ["Hồ sơ công ty", "/company"],
-              ["Chính sách bảo mật", "/privacy"],
-              ["Hóa đơn điện tử", "/invoice"],
-            ].map(([label, path], i) => (
-              <button key={label} className="fm-link fm-link-small" style={{ "--i": i + 8 }} onClick={() => goTo(path)}>
+              activeAccount
+                ? [staff ? "Trang staff" : "Tai khoan cua toi", staff ? "/staff/dashboard" : "/profile"]
+                : ["Dang nhap / Dang ky", "/login"],
+              ["Ho so cong ty", "/company"],
+              ["Chinh sach bao mat", "/privacy"],
+              ["Hoa don dien tu", "/invoice"],
+            ].map(([label, path], index) => (
+              <button key={label} className="fm-link fm-link-small" style={{ "--i": index + 8 }} onClick={() => goTo(path)}>
                 {label}
               </button>
             ))}
           </div>
         </div>
+
         <div className="fm-footer">
-          <span>© 2024 Hải SAPA</span>
+          <span>(c) 2024 Hai SAPA</span>
           <div className="fm-footer-links">
-            <span>VN</span><span className="fm-footer-sep">·</span><span>EN</span>
+            <span>VN</span>
+            <span className="fm-footer-sep">.</span>
+            <span>EN</span>
           </div>
         </div>
       </div>

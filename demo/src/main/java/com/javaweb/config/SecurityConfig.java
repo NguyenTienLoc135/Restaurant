@@ -24,9 +24,10 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(username -> userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username)));
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(
+            username -> userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username))
+        );
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }

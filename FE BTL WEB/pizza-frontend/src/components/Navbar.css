@@ -9,6 +9,11 @@ body {
   font-family: "DM Sans", sans-serif;
 }
 
+:root {
+  --navbar-inline: clamp(20px, 4%, 40px);
+  --navbar-menu-inline: clamp(24px, 4.5%, 48px);
+}
+
 /* ════════════════════════════════════════
    NAVBAR
 ════════════════════════════════════════ */
@@ -89,7 +94,7 @@ body {
 /* X close button — shown only when menu is open */
 .close-btn {
   position: absolute;
-  right: 40px;
+  right: var(--navbar-inline);
   top: 50%;
   transform: translateY(-50%);
   width: 48px;
@@ -125,7 +130,7 @@ body {
 .navbar-container {
   height: 100%;
   width: 100%;
-  padding: 0 40px;
+  padding: 0 var(--navbar-inline);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -299,7 +304,7 @@ body {
 .fm-close {
   position: absolute;
   top: 22px;
-  right: 40px;
+  right: var(--navbar-inline);
   width: 48px;
   height: 48px;
   background: none;
@@ -366,7 +371,7 @@ body {
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
-  padding: 110px 48px 40px;
+  padding: 110px var(--navbar-menu-inline) 40px;
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: 40px;
@@ -484,7 +489,7 @@ body {
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 48px;
+  padding: 20px var(--navbar-menu-inline);
   border-top: 1px solid rgba(0,0,0,0.08);
   display: flex;
   justify-content: space-between;
@@ -506,16 +511,19 @@ body {
    RESPONSIVE
 ════════════════════════════════════════ */
 @media (max-width: 900px) {
+  :root {
+    --navbar-inline: clamp(16px, 5%, 28px);
+    --navbar-menu-inline: clamp(20px, 6%, 28px);
+  }
   .nav-links      { display: none; }
-  .navbar-container { padding: 0 28px; }
-  .fm-inner       { grid-template-columns: 1fr; padding: 100px 28px 32px; }
+  .fm-inner       { grid-template-columns: 1fr; padding: 100px var(--navbar-menu-inline) 32px; }
   .fm-link-large  { font-size: 34px; }
 }
 
 @media (max-width: 560px) {
   .logo-main      { font-size: 20px; letter-spacing: 3px; }
   .fm-link-large  { font-size: 28px; }
-  .fm-footer      { padding: 16px 28px; }
+  .fm-footer      { padding: 16px var(--navbar-menu-inline); }
 }
 
 /* ════════ LOGIN BUTTON ════════ */

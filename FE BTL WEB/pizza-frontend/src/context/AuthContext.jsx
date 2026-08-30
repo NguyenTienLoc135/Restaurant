@@ -1,7 +1,26 @@
-import { createContext, useContext, useState } from "react"
-import { createUserAccount, findUserAccount } from "../data/authDb"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { decodeJwtToken, isJwtTokenExpired } from "../services/jwt"
+import {
+  normalizeBookingList,
+  normalizeBookingResponse,
+  normalizeOrderList,
+  normalizeOrderResponse,
+  normalizeUserResponse,
+} from "../services/responseAdapters"
+import {
+  getMyInfoApi,
+  loginUserApi,
+  registerUserApi,
+  updateMyInfoApi,
+} from "../services/authApi"
+import { getApiErrorMessage } from "../services/apiClient"
+import { cancelMyOrderApi, createOrderApi, getMyOrdersApi, getOrderDetailsApi } from "../services/orderApi"
+import { createBookingApi, getMyBookingsApi } from "../services/bookingApi"
+import { loadBookings, loadOrders } from "../data/staffData"
 
 const AuthContext = createContext(null)
+const USER_SESSION_KEY = "hs_user"
+const USER_TOKEN_KEY = "hs_user_token"
 
 function loadStorage(key, fallback = null) {
   try {
@@ -16,105 +35,335 @@ function saveStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value))
 }
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => loadStorage("hs_user"))
-  const [orders, setOrders] = useState(() => loadStorage("hs_orders", []))
-  const [bookings, setBookings] = useState(() => loadStorage("hs_bookings", []))
+function clearUserSessionStorage() {
+  localStorage.removeItem(USER_SESSION_KEY)
+  localStorage.removeItem(USER_TOKEN_KEY)
+}
 
-  function login(userData) {
-    const nextUser = { ...userData, avatar: userData.name?.charAt(0).toUpperCase() }
-    setUser(nextUser)
-    saveStorage("hs_user", nextUser)
+export function getUserToken() {
+  return localStorage.getItem(USER_TOKEN_KEY)
+}
+
+export function isUserLoggedIn() {
+  const token = getUserToken()
+  return !!token && !isJwtTokenExpired(token)
+}
+
+function toSafeUser(account) {
+  return normalizeUserResponse(account)
+}
+
+function buildFallbackUser(identifier, token) {
+  const payload = decodeJwtToken(token) || {}
+  const username = String(payload.sub || identifier || "").trim()
+  return toSafeUser({
+    id: payload.userId || payload.id || username || "pending-user",
+    username,
+    fullname: username,
+    email: "",
+    role: "customer",
+  })
+}
+
+async function fetchCurrentUser(token) {
+  const profile = await getMyInfoApi(token)
+  return toSafeUser(profile)
+}
+
+async function fetchOrderHistory(token) {
+  const orders = await getMyOrdersApi(token)
+  const normalizedOrders = normalizeOrderList(orders)
+  const hydratedOrders = await Promise.all(
+    normalizedOrders.map(async order => {
+      try {
+        const numericId = Number(String(order.id).replace("#4P", ""))
+        const details = await getOrderDetailsApi(numericId, token)
+        return normalizeOrderResponse({ ...order, details })
+      } catch {
+        return order
+      }
+    })
+  )
+  return hydratedOrders
+}
+
+async function fetchBookingHistory(token) {
+  const bookings = await getMyBookingsApi(token)
+  return normalizeBookingList(bookings)
+}
+
+function hydrateStoredUser() {
+  const saved = loadStorage(USER_SESSION_KEY)
+  const token = localStorage.getItem(USER_TOKEN_KEY)
+
+  if (!token || isJwtTokenExpired(token)) {
+    clearUserSessionStorage()
+    return { user: null, token: null }
   }
 
-  function loginWithCredentials(email, password) {
-    const account = findUserAccount(email, password)
-    if (!account) {
-      return { ok: false, message: "Email hoặc mật khẩu không đúng" }
+  if (saved?.id) {
+    return {
+      user: toSafeUser(saved),
+      token,
+    }
+  }
+
+  const fallbackUser = buildFallbackUser("", token)
+  saveStorage(USER_SESSION_KEY, fallbackUser)
+
+  return {
+    user: fallbackUser,
+    token,
+  }
+}
+
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(hydrateStoredUser)
+  const [orders, setOrders] = useState([])
+  const [bookings, setBookings] = useState([])
+  const [loadingOrders, setLoadingOrders] = useState(false)
+  const [loadingBookings, setLoadingBookings] = useState(false)
+
+  useEffect(() => {
+    function handleStorage(event) {
+      if ([USER_SESSION_KEY, USER_TOKEN_KEY].includes(event.key)) {
+        setSession(hydrateStoredUser())
+      }
     }
 
-    const { password: _password, ...safeUser } = account
-    const nextUser = { ...safeUser, avatar: safeUser.name?.charAt(0).toUpperCase() }
-    setUser(nextUser)
-    saveStorage("hs_user", nextUser)
-    return { ok: true, user: nextUser }
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [])
+
+  useEffect(() => {
+    async function refreshCurrentUser() {
+      const token = localStorage.getItem(USER_TOKEN_KEY)
+      if (!token || isJwtTokenExpired(token)) return
+
+      try {
+        const [nextUser, nextOrders, nextBookings] = await Promise.all([
+          fetchCurrentUser(token),
+          fetchOrderHistory(token).catch(() => normalizeOrderList(loadOrders())),
+          fetchBookingHistory(token).catch(() => normalizeBookingList(loadBookings())),
+        ])
+        setSession({ user: nextUser, token })
+        saveStorage(USER_SESSION_KEY, nextUser)
+        setOrders(nextOrders)
+        setBookings(nextBookings)
+      } catch {
+        setSession(hydrateStoredUser())
+      }
+    }
+
+    refreshCurrentUser()
+  }, [])
+
+  const user = session.user
+  const token = session.token
+
+  useEffect(() => {
+    let active = true
+
+    async function loadHistories() {
+      if (!token || !user?.id) {
+        setOrders([])
+        setBookings([])
+        return
+      }
+
+      setLoadingOrders(true)
+      setLoadingBookings(true)
+
+      try {
+        const nextOrders = await fetchOrderHistory(token)
+        if (!active) return
+        setOrders(nextOrders)
+      } catch {
+        if (!active) return
+        setOrders(normalizeOrderList(loadOrders()))
+      } finally {
+        if (!active) return
+        setLoadingOrders(false)
+      }
+
+      try {
+        const nextBookings = await fetchBookingHistory(token)
+        if (!active) return
+        setBookings(nextBookings)
+      } catch {
+        if (!active) return
+        setBookings(normalizeBookingList(loadBookings()))
+      } finally {
+        if (!active) return
+        setLoadingBookings(false)
+      }
+    }
+
+    loadHistories()
+    const intervalId = window.setInterval(loadHistories, 10000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [token, user?.id])
+
+  function login(userData) {
+    const currentToken = getUserToken()
+    const safeUser = toSafeUser(userData) || buildFallbackUser("", currentToken)
+    setSession({ user: safeUser, token: currentToken })
+    saveStorage(USER_SESSION_KEY, safeUser)
   }
 
-  function registerUser({ name, email, password }) {
-    const result = createUserAccount({ name, email, password })
-    if (!result.ok) return result
+  async function loginWithCredentials(identifier, password) {
+    try {
+      const username = identifier.trim()
+      const nextToken = await loginUserApi({ username, password })
+      localStorage.setItem(USER_TOKEN_KEY, nextToken)
 
-    const { password: _password, ...safeUser } = result.user
-    const nextUser = { ...safeUser, avatar: safeUser.name?.charAt(0).toUpperCase() }
-    setUser(nextUser)
-    saveStorage("hs_user", nextUser)
-    return { ok: true, user: nextUser }
+      let nextUser
+      try {
+        nextUser = await fetchCurrentUser(nextToken)
+      } catch {
+        nextUser = buildFallbackUser(username, nextToken)
+      }
+      setSession({ user: nextUser, token: nextToken })
+      saveStorage(USER_SESSION_KEY, nextUser)
+      return { ok: true, user: nextUser, token: nextToken }
+    } catch (error) {
+      clearUserSessionStorage()
+      return { ok: false, message: getApiErrorMessage(error, "Tên đăng nhập hoặc mật khẩu không đúng") }
+    }
+  }
+
+  async function registerUser({ name, username, email, password, phone, address, gender }) {
+    try {
+      await registerUserApi({
+        fullname: name,
+        username,
+        email,
+        password,
+        phone,
+        address,
+        userGender: gender,
+      })
+
+      return await loginWithCredentials(username, password)
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Không thể tạo tài khoản") }
+    }
   }
 
   function logout() {
-    setUser(null)
-    localStorage.removeItem("hs_user")
+    setSession({ user: null, token: null })
+    setOrders([])
+    setBookings([])
+    clearUserSessionStorage()
   }
 
-  function updateUser(data) {
-    const nextUser = {
-      ...user,
-      ...data,
-      avatar: (data.name || user.name)?.charAt(0).toUpperCase(),
-    }
-    setUser(nextUser)
-    saveStorage("hs_user", nextUser)
-  }
-
-  function addOrder(order) {
-    const newOrder = {
-      id: "#4P" + Date.now().toString().slice(-4),
-      date: new Date().toLocaleDateString("vi-VN"),
-      items: order.items,
-      total: order.total,
-      status: "Chờ xác nhận",
-      customer: order.customer || user?.name || "Khách online",
-      phone: order.phone || user?.phone || "",
-      address: order.address || "—",
-      district: order.district || "",
-      payment: order.payment || "cod",
-      notes: order.notes || "",
-      deliveryTime: order.deliveryTime || "Giao ngay",
+  async function updateUser(data) {
+    if (!user?.id) {
+      return { ok: false, message: "Bạn chưa đăng nhập" }
     }
 
-    const updatedOrders = [newOrder, ...orders]
-    setOrders(updatedOrders)
-    saveStorage("hs_orders", updatedOrders)
+    try {
+      await updateMyInfoApi({
+        fullname: data.name,
+        phone: data.phone,
+        address: data.address,
+      }, token)
 
-    const currentStaffOrders = loadStorage("hs_staff_orders", [])
-    saveStorage("hs_staff_orders", [newOrder, ...currentStaffOrders])
+      const nextUser = await fetchCurrentUser(token)
+      setSession({ user: nextUser, token })
+      saveStorage(USER_SESSION_KEY, nextUser)
+      return { ok: true, user: nextUser, token }
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Không thể cập nhật thông tin") }
+    }
   }
 
-  function addBooking(booking) {
-    const newBooking = {
-      id: "#BK" + Date.now().toString().slice(-4),
-      date: booking.date,
-      time: booking.time,
-      guests: Number(booking.guests),
-      status: "Chờ xác nhận",
-      name: booking.name || user?.name || "Khách online",
-      phone: booking.phone || user?.phone || "",
-      email: booking.email || user?.email || "",
-      restaurant: booking.restaurant || "Pizza 4P's Ba Đình",
-      note: booking.note || "",
-      table: booking.table || "TBD",
+  async function addOrder(order) {
+    if (!user?.id || !token) {
+      return { ok: false, message: "Bạn cần đăng nhập để đặt hàng" }
     }
 
-    const updatedBookings = [newBooking, ...bookings]
-    setBookings(updatedBookings)
-    saveStorage("hs_bookings", updatedBookings)
-
-    const currentStaffBookings = loadStorage("hs_staff_bookings", [])
-    saveStorage("hs_staff_bookings", [newBooking, ...currentStaffBookings])
+    try {
+      await createOrderApi({
+        note: order.notes || "",
+        items: order.items,
+      }, token)
+      const nextOrders = await fetchOrderHistory(token)
+      setOrders(nextOrders)
+      return { ok: true, message: "Đặt hàng thành công" }
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Không thể tạo đơn hàng") }
+    }
   }
+
+  async function cancelOrder(orderId, reason) {
+    if (!user?.id || !token) {
+      return { ok: false, message: "Bạn cần đăng nhập để hủy đơn hàng" }
+    }
+
+    try {
+      await cancelMyOrderApi(orderId, reason, token)
+      const nextOrders = await fetchOrderHistory(token)
+      setOrders(nextOrders)
+      return { ok: true, message: "Đã hủy đơn hàng" }
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Không thể hủy đơn hàng") }
+    }
+  }
+
+  async function addBooking(booking) {
+    if (!user?.id || !token) {
+      return { ok: false, message: "Bạn cần đăng nhập để đặt bàn" }
+    }
+
+    try {
+      await createBookingApi({
+        bookingDate: booking.bookingDate,
+        guests: booking.guests,
+      }, token)
+      const nextBookings = await fetchBookingHistory(token)
+      setBookings(nextBookings)
+      return { ok: true, message: "Đặt bàn thành công" }
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Không thể tạo đặt bàn") }
+    }
+  }
+
+  const userOrders = useMemo(() => {
+    if (!user) return []
+    return orders
+  }, [orders, user])
+
+  const userBookings = useMemo(() => {
+    if (!user) return []
+    return bookings
+  }, [bookings, user])
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithCredentials, registerUser, logout, updateUser, orders, bookings, addOrder, addBooking }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        getToken: getUserToken,
+        isLoggedIn: isUserLoggedIn,
+        login,
+        loginWithCredentials,
+        registerUser,
+        logout,
+        updateUser,
+        orders: userOrders,
+        bookings: userBookings,
+        addOrder,
+        cancelOrder,
+        addBooking,
+        loadingOrders,
+        loadingBookings,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
@@ -125,15 +374,21 @@ export function useAuth() {
   if (!context) {
     return {
       user: null,
+      token: null,
+      getToken: () => null,
+      isLoggedIn: () => false,
       login: () => {},
-      loginWithCredentials: () => ({ ok: false }),
-      registerUser: () => ({ ok: false }),
+      loginWithCredentials: async () => ({ ok: false }),
+      registerUser: async () => ({ ok: false }),
       logout: () => {},
-      updateUser: () => {},
+      updateUser: async () => ({ ok: false }),
       orders: [],
       bookings: [],
-      addOrder: () => {},
-      addBooking: () => {},
+      addOrder: async () => ({ ok: false }),
+      cancelOrder: async () => ({ ok: false }),
+      addBooking: async () => ({ ok: false }),
+      loadingOrders: false,
+      loadingBookings: false,
     }
   }
   return context

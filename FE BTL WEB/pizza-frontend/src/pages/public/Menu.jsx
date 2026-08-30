@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { useMenu } from "../../context/MenuContext"
 import { MENU_STATUS } from "../../data/menuData"
+import { getApiErrorMessage } from "../../services/apiClient"
+import { fetchPublicItemDetailApi } from "../../services/menuApi"
+import { normalizeMenuItemDetailResponse } from "../../services/responseAdapters"
 import "./Menu.css"
 
 function fmtPrice(price) {
   return `${price.toLocaleString("vi-VN")}₫`
 }
 
-function DishDetail({ item, onClose }) {
+function DishDetail({ item, loading, error, onClose }) {
   return (
     <div className="dish-detail-panel">
-      <button className="dd-close" onClick={onClose}>✕</button>
+      <button className="dd-close" onClick={onClose}>×</button>
       <div className="dd-img-wrap">
         <img src={item.img} alt={item.name} draggable="false" />
         <div className="dd-img-overlay" />
@@ -20,11 +22,17 @@ function DishDetail({ item, onClose }) {
         <span className="dd-cat">{item.catLabel}</span>
         <h3 className="dd-name">{item.name}</h3>
         <p className="dd-price">{fmtPrice(item.price)}</p>
-        {item.status === MENU_STATUS.outOfStock && <p className="dd-val" style={{ color: "#b91c1c", fontWeight: 700 }}>🚫 Hết món</p>}
+        {item.status === MENU_STATUS.outOfStock && <p className="dd-val" style={{ color: "#b91c1c", fontWeight: 700 }}>Hết món</p>}
+        {loading && <p className="dd-val">Đang tải chi tiết món...</p>}
+        {error && <p className="dd-val" style={{ color: "#b91c1c" }}>{error}</p>}
 
-        {item.origin && <div className="dd-row"><span className="dd-label">🌍 Nguồn gốc</span><span className="dd-val">{item.origin}</span></div>}
-        {item.ingredients && <div className="dd-row"><span className="dd-label">🧀 Nguyên liệu</span><span className="dd-val">{item.ingredients}</span></div>}
-        {item.story && <div className="dd-story"><span className="dd-label">📖 Câu chuyện</span><p className="dd-story-text">{item.story}</p></div>}
+        {item.desc && <div className="dd-story"><span className="dd-label">Mô tả</span><p className="dd-story-text">{item.desc}</p></div>}
+        {item.origin && <div className="dd-row"><span className="dd-label">Nguồn gốc</span><span className="dd-val">{item.origin}</span></div>}
+        {item.ingredients && <div className="dd-row"><span className="dd-label">Nguyên liệu</span><span className="dd-val">{item.ingredients}</span></div>}
+        {item.story && <div className="dd-story"><span className="dd-label">Câu chuyện</span><p className="dd-story-text">{item.story}</p></div>}
+        {!loading && !error && !item.desc && !item.origin && !item.ingredients && !item.story && (
+          <p className="dd-val">Chưa có thông tin chi tiết cho món này.</p>
+        )}
       </div>
     </div>
   )
@@ -37,6 +45,29 @@ function DragScrollRow({ items }) {
   const scrollLeft = useRef(0)
   const didDrag = useRef(false)
   const [expanded, setExpanded] = useState(null)
+  const [detailById, setDetailById] = useState({})
+  const [detailLoadingById, setDetailLoadingById] = useState({})
+  const [detailErrorById, setDetailErrorById] = useState({})
+
+  async function loadItemDetail(item) {
+    if (!item?.id || detailById[item.id] || detailLoadingById[item.id]) return
+
+    setDetailLoadingById(prev => ({ ...prev, [item.id]: true }))
+    setDetailErrorById(prev => ({ ...prev, [item.id]: "" }))
+
+    try {
+      const data = await fetchPublicItemDetailApi(item.id)
+      const normalized = normalizeMenuItemDetailResponse({ ...item, ...data })
+      setDetailById(prev => ({ ...prev, [item.id]: normalized }))
+    } catch (apiError) {
+      setDetailErrorById(prev => ({
+        ...prev,
+        [item.id]: getApiErrorMessage(apiError, "Không thể tải chi tiết món"),
+      }))
+    } finally {
+      setDetailLoadingById(prev => ({ ...prev, [item.id]: false }))
+    }
+  }
 
   function onMouseDown(event) {
     isDragging.current = true
@@ -61,9 +92,16 @@ function DragScrollRow({ items }) {
     if (viewportRef.current) viewportRef.current.style.cursor = "grab"
   }
 
-  function handleCardClick(index) {
+  function handleCardClick(index, item) {
     if (didDrag.current) return
-    setExpanded(prev => (prev === index ? null : index))
+
+    setExpanded(prev => {
+      const nextExpanded = prev === index ? null : index
+      if (nextExpanded !== null) {
+        void loadItemDetail(item)
+      }
+      return nextExpanded
+    })
   }
 
   return (
@@ -71,7 +109,7 @@ function DragScrollRow({ items }) {
       <div className="scroll-track">
         {items.map((item, index) => (
           <div key={item.id} className={`dish-card-wrap ${expanded === index ? "is-expanded" : ""}`}>
-            <div className={`dish-card ${expanded === index ? "hidden" : ""}`} onClick={() => handleCardClick(index)} style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.75 : 1 }}>
+            <div className={`dish-card ${expanded === index ? "hidden" : ""}`} onClick={() => handleCardClick(index, item)} style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.75 : 1 }}>
               <div className="dish-card-img">
                 <img src={item.img} alt={item.name} loading="lazy" draggable="false" />
                 <div className="dish-card-hover-hint"><span>{item.status === MENU_STATUS.outOfStock ? "Tạm hết món" : "Xem chi tiết"}</span></div>
@@ -86,7 +124,14 @@ function DragScrollRow({ items }) {
                 <p className="dish-card-price">{fmtPrice(item.price)}</p>
               </div>
             </div>
-            {expanded === index && <DishDetail item={item} onClose={() => setExpanded(null)} />}
+            {expanded === index && (
+              <DishDetail
+                item={detailById[item.id] || item}
+                loading={!!detailLoadingById[item.id]}
+                error={detailErrorById[item.id]}
+                onClose={() => setExpanded(null)}
+              />
+            )}
           </div>
         ))}
       </div>
@@ -99,7 +144,7 @@ function FilteredGrid({ items, onClear }) {
     <div className="filtered-section">
       <div className="filtered-header">
         <span className="filtered-count">{items.length} món</span>
-        <button className="filtered-clear" onClick={onClear}>✕ Xóa bộ lọc</button>
+        <button className="filtered-clear" onClick={onClear}>× Xóa bộ lọc</button>
       </div>
       {items.length === 0 ? (
         <div className="no-result">
@@ -115,7 +160,7 @@ function FilteredGrid({ items, onClear }) {
                 <span className="fg-cat">{item.catLabel}</span>
                 <h3 className="fg-name">{item.name}</h3>
                 <p className="fg-price">{fmtPrice(item.price)}</p>
-                {item.status === MENU_STATUS.outOfStock && <p style={{ color: "#b91c1c", fontWeight: 700 }}>🚫 Hết món</p>}
+                {item.status === MENU_STATUS.outOfStock && <p style={{ color: "#b91c1c", fontWeight: 700 }}>Hết món</p>}
               </div>
             </div>
           ))}
@@ -126,9 +171,11 @@ function FilteredGrid({ items, onClear }) {
 }
 
 export default function Menu() {
-  const { groupedSections, items } = useMenu()
+  const { groupedSections, items, categories, searchItems } = useMenu()
   const [activeSection, setActiveSection] = useState(null)
   const [search, setSearch] = useState("")
+  const [category, setCategory] = useState("")
+  const [availability, setAvailability] = useState("")
   const [sort, setSort] = useState("default")
   const [priceMin, setPriceMin] = useState(0)
   const [priceMax, setPriceMax] = useState(() => {
@@ -144,13 +191,21 @@ export default function Menu() {
     setPriceMax(Math.ceil(max / 50000) * 50000 || 500000)
   }, [items])
 
-  const allItems = items
-  const maxPrice = Math.ceil((Math.max(...allItems.map(item => item.price), 0) || 500000) / 50000) * 50000
-  const isFiltering = search.trim() !== "" || sort !== "default" || priceMin > 0 || priceMax < maxPrice
+  const maxPrice = Math.ceil((Math.max(...items.map(item => item.price), 0) || 500000) / 50000) * 50000
+  const isFiltering =
+    search.trim() !== "" ||
+    category !== "" ||
+    availability !== "" ||
+    sort !== "default" ||
+    priceMin > 0 ||
+    priceMax < maxPrice
 
   useEffect(() => {
     if (isFiltering) return
-    const observer = new IntersectionObserver(entries => entries.forEach(entry => entry.isIntersecting && setActiveSection(entry.target.dataset.id)), { rootMargin: "-40% 0px -40% 0px" })
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(entry => entry.isIntersecting && setActiveSection(entry.target.dataset.id)),
+      { rootMargin: "-40% 0px -40% 0px" }
+    )
     Object.values(sectionRefs.current).forEach(element => element && observer.observe(element))
     return () => observer.disconnect()
   }, [groupedSections, isFiltering])
@@ -163,17 +218,24 @@ export default function Menu() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const suggestions = search.trim() ? allItems.filter(item => item.name.toLowerCase().includes(search.toLowerCase())).slice(0, 6) : []
-  let filteredItems = allItems.filter(item => {
-    const matchSearch = !search.trim() || item.name.toLowerCase().includes(search.toLowerCase())
-    const matchPrice = item.price >= priceMin && item.price <= priceMax
-    return matchSearch && matchPrice
-  })
+  const builder = {
+    name: search,
+    category,
+    leftPrice: priceMin,
+    rightPrice: priceMax,
+    isAvailable: availability,
+  }
+
+  const suggestions = search.trim() ? searchItems({ name: search }).slice(0, 6) : []
+
+  let filteredItems = searchItems(builder)
   if (sort === "asc") filteredItems = [...filteredItems].sort((a, b) => a.price - b.price)
   if (sort === "desc") filteredItems = [...filteredItems].sort((a, b) => b.price - a.price)
 
   function clearFilters() {
     setSearch("")
+    setCategory("")
+    setAvailability("")
     setSort("default")
     setPriceMin(0)
     setPriceMax(maxPrice)
@@ -191,7 +253,7 @@ export default function Menu() {
           <div className="mc-search-wrap" ref={searchRef}>
             <div className="mc-search-box">
               <input className="mc-search-input" placeholder="Tìm món ăn..." value={search} onChange={event => { setSearch(event.target.value); setShowSuggest(true) }} onFocus={() => setShowSuggest(true)} />
-              {search && <button className="mc-search-clear" onClick={() => { setSearch(""); setShowSuggest(false) }}>✕</button>}
+              {search && <button className="mc-search-clear" onClick={() => { setSearch(""); setShowSuggest(false) }}>×</button>}
             </div>
 
             {showSuggest && suggestions.length > 0 && (
@@ -212,6 +274,27 @@ export default function Menu() {
             {[["default", "Mặc định"], ["asc", "Giá tăng"], ["desc", "Giá giảm"]].map(([key, label]) => (
               <button key={key} className={`mc-sort-btn ${sort === key ? "active" : ""}`} onClick={() => setSort(key)}>{label}</button>
             ))}
+          </div>
+        </div>
+
+        <div className="mc-inner" style={{ marginTop: 12 }}>
+          <div className="mc-sort">
+            <span className="mc-sort-label">Danh mục:</span>
+            <button className={`mc-sort-btn ${category === "" ? "active" : ""}`} onClick={() => setCategory("")}>Tất cả</button>
+            {categories.map(item => (
+              <button key={item.key} className={`mc-sort-btn ${category === item.key ? "active" : ""}`} onClick={() => setCategory(item.key)}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mc-inner" style={{ marginTop: 12 }}>
+          <div className="mc-sort">
+            <span className="mc-sort-label">Trạng thái:</span>
+            <button className={`mc-sort-btn ${availability === "" ? "active" : ""}`} onClick={() => setAvailability("")}>Tất cả</button>
+            <button className={`mc-sort-btn ${availability === "true" ? "active" : ""}`} onClick={() => setAvailability("true")}>Có sẵn</button>
+            <button className={`mc-sort-btn ${availability === "false" ? "active" : ""}`} onClick={() => setAvailability("false")}>Hết món</button>
           </div>
         </div>
 

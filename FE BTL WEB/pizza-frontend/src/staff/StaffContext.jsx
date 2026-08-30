@@ -1,7 +1,13 @@
 import { createContext, useContext, useState } from "react"
-import { changeStaffAccountPassword, findStaffAccount, updateStaffAccount } from "../data/authDb"
+import { findStaffAccountByIdentifier } from "../data/authDb"
+import { isJwtTokenExpired } from "../services/jwt"
+import { getMyInfoApi, loginUserApi, updateMyInfoApi } from "../services/authApi"
+import { getApiErrorMessage } from "../services/apiClient"
+import { normalizeUserResponse } from "../services/responseAdapters"
 
 const StaffContext = createContext(null)
+const STAFF_SESSION_KEY = "hs_staff"
+const STAFF_TOKEN_KEY = "hs_staff_token"
 
 function loadStorage(key, fallback = null) {
   try {
@@ -16,63 +22,151 @@ function saveStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value))
 }
 
-function toSafeStaff(account) {
-  const { password: _password, ...safeAccount } = account
-  return safeAccount
+function clearStaffSessionStorage() {
+  localStorage.removeItem(STAFF_SESSION_KEY)
+  localStorage.removeItem(STAFF_TOKEN_KEY)
+}
+
+function clearUserSessionShadow() {
+  localStorage.removeItem("hs_user")
+  localStorage.removeItem("hs_user_token")
+}
+
+export function getStaffToken() {
+  return localStorage.getItem(STAFF_TOKEN_KEY)
+}
+
+export function isStaffLoggedIn() {
+  const token = getStaffToken()
+  return !!token && !isJwtTokenExpired(token)
+}
+
+function toSafeStaff(account, fallbackRole = "staff") {
+  const normalized = normalizeUserResponse(account)
+  const nextRole = String(account?.role || normalized?.role || fallbackRole).trim().toLowerCase()
+  return {
+    ...normalized,
+    role: nextRole,
+    avatar: normalized?.avatar || normalized?.name?.charAt(0)?.toUpperCase() || nextRole.charAt(0).toUpperCase(),
+  }
+}
+
+async function fetchCurrentStaff(roleHint) {
+  const profile = await getMyInfoApi()
+  return toSafeStaff(profile, roleHint)
+}
+
+function hydrateStoredStaff() {
+  const saved = loadStorage(STAFF_SESSION_KEY)
+  const token = localStorage.getItem(STAFF_TOKEN_KEY)
+
+  if (saved?.id && token && !isJwtTokenExpired(token)) {
+    return { staff: toSafeStaff(saved, saved.role), token }
+  }
+
+  clearStaffSessionStorage()
+
+  const userShadow = loadStorage("hs_user")
+  const userShadowToken = localStorage.getItem("hs_user_token")
+  const identifier = userShadow?.username || userShadow?.email || ""
+
+  if (!userShadow?.id || !userShadowToken || isJwtTokenExpired(userShadowToken) || !identifier) {
+    return { staff: null, token: null }
+  }
+
+  const matchedStaff = findStaffAccountByIdentifier(identifier)
+  if (!matchedStaff) {
+    return { staff: null, token: null }
+  }
+
+  const hydratedStaff = toSafeStaff({ ...userShadow, role: matchedStaff.role }, matchedStaff.role)
+  clearUserSessionShadow()
+  saveStorage(STAFF_SESSION_KEY, hydratedStaff)
+  localStorage.setItem(STAFF_TOKEN_KEY, userShadowToken)
+
+  return { staff: hydratedStaff, token: userShadowToken }
 }
 
 export function StaffProvider({ children }) {
-  const [staff, setStaff] = useState(() => loadStorage("hs_staff"))
+  const [session, setSession] = useState(hydrateStoredStaff)
 
-  function syncStaffSession(account) {
-    const safeAccount = toSafeStaff(account)
-    setStaff(safeAccount)
-    saveStorage("hs_staff", safeAccount)
+  const staff = session.staff
+  const token = session.token
+
+  function syncStaffSession(account, nextToken) {
+    const safeAccount = toSafeStaff(account, account?.role)
+    clearUserSessionShadow()
+    setSession({ staff: safeAccount, token: nextToken })
+    saveStorage(STAFF_SESSION_KEY, safeAccount)
+    localStorage.setItem(STAFF_TOKEN_KEY, nextToken)
     return safeAccount
   }
 
-  function staffLogin(identifier, password) {
-    const account = findStaffAccount(identifier, password)
-    if (!account) return false
+  function acceptStaffSession(account, nextToken) {
+    const safeAccount = syncStaffSession(account, nextToken)
+    return { ok: true, staff: safeAccount, token: nextToken }
+  }
 
-    syncStaffSession(account)
-    return true
+  async function staffLogin(identifier, password) {
+    try {
+      const nextToken = await loginUserApi({ username: identifier.trim(), password })
+      const nextStaff = await fetchCurrentStaff("staff")
+      const nextRole = String(nextStaff?.role || "").trim().toLowerCase()
+
+      if (nextRole !== "staff" && nextRole !== "driver") {
+        clearStaffSessionStorage()
+        return { ok: false, message: "Tai khoan nay khong co quyen staff." }
+      }
+
+      const safeStaff = syncStaffSession({ ...nextStaff, role: nextRole }, nextToken)
+      return { ok: true, staff: safeStaff, token: nextToken }
+    } catch (error) {
+      clearStaffSessionStorage()
+      return { ok: false, message: getApiErrorMessage(error, "Khong the dang nhap staff") }
+    }
   }
 
   function staffLoginWithAccount(account) {
-    syncStaffSession(account)
+    return staffLogin(account.username, account.password)
   }
 
   function staffLogout() {
-    setStaff(null)
-    localStorage.removeItem("hs_staff")
+    setSession({ staff: null, token: null })
+    clearStaffSessionStorage()
   }
 
-  function updateStaffProfile(data) {
+  async function updateStaffProfile(data) {
     if (!staff?.id) {
-      return { ok: false, message: "Bạn chưa đăng nhập tài khoản staff" }
+      return { ok: false, message: "Ban chua dang nhap tai khoan staff" }
     }
 
-    const result = updateStaffAccount(staff.id, data)
-    if (!result.ok) return result
-
-    syncStaffSession(result.staff)
-    return { ok: true, staff: toSafeStaff(result.staff) }
+    try {
+      await updateMyInfoApi({
+        fullname: data.name,
+        phone: data.phone,
+        address: data.address,
+      })
+      const refreshed = await fetchCurrentStaff(staff.role)
+      const safeStaff = syncStaffSession({ ...refreshed, role: staff.role }, token)
+      return { ok: true, staff: safeStaff }
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Khong the cap nhat staff") }
+    }
   }
 
-  function changeStaffPassword(currentPassword, nextPassword) {
-    if (!staff?.id) {
-      return { ok: false, message: "Bạn chưa đăng nhập tài khoản staff" }
-    }
-
-    return changeStaffAccountPassword(staff.id, currentPassword, nextPassword)
+  function changeStaffPassword() {
+    return { ok: false, message: "Backend hien chua co endpoint doi mat khau cho staff" }
   }
 
   return (
     <StaffContext.Provider
       value={{
         staff,
+        token,
+        getToken: getStaffToken,
+        isLoggedIn: isStaffLoggedIn,
         staffLogin,
+        acceptStaffSession,
         staffLoginWithAccount,
         staffLogout,
         updateStaffProfile,
@@ -89,10 +183,14 @@ export function useStaff() {
   if (!context) {
     return {
       staff: null,
-      staffLogin: () => false,
-      staffLoginWithAccount: () => {},
+      token: null,
+      getToken: () => null,
+      isLoggedIn: () => false,
+      staffLogin: async () => ({ ok: false }),
+      acceptStaffSession: async () => ({ ok: false }),
+      staffLoginWithAccount: async () => ({ ok: false }),
       staffLogout: () => {},
-      updateStaffProfile: () => ({ ok: false }),
+      updateStaffProfile: async () => ({ ok: false }),
       changeStaffPassword: () => ({ ok: false }),
     }
   }

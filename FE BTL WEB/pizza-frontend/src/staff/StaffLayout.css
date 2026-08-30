@@ -6,6 +6,8 @@
   --s-white: #ffffff;
   --s-border: rgba(15,32,68,0.08);
   --s-muted: #6b7280;
+  --staff-inline: clamp(20px, 4%, 40px);
+  --staff-sidebar-width: clamp(220px, 18vw, 260px);
 }
 
 * { box-sizing: border-box; }
@@ -25,7 +27,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
+  padding: 0 var(--staff-inline);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -93,7 +95,7 @@
 
 /* ── SIDEBAR ── */
 .sdl-sidebar {
-  width: 220px;
+  width: var(--staff-sidebar-width);
   background: var(--s-white);
   border-right: 1px solid var(--s-border);
   display: flex;
@@ -146,7 +148,7 @@
 .sdl-main {
   flex: 1;
   overflow-y: auto;
-  padding: 36px 40px;
+  padding: 36px var(--staff-inline);
 }
 
 .sdl-overlay {
@@ -305,13 +307,13 @@
 @media (max-width: 900px) {
   .sdl-hamburger { display: block; }
   .sdl-sidebar {
-    position: fixed; left: -220px; top: 64px;
+    position: fixed; left: calc(var(--staff-sidebar-width) * -1); top: 64px;
     height: calc(100vh - 64px);
     z-index: 90; transition: left 0.3s ease;
   }
   .sdl-sidebar.open { left: 0; box-shadow: 4px 0 20px rgba(0,0,0,0.15); }
   .sdl-overlay { display: block; }
-  .sdl-main { padding: 24px 20px; }
+  .sdl-main { padding: 24px var(--staff-inline); }
   .sm-stats { grid-template-columns: 1fr 1fr; }
   .sdl-staff-info { display: none; }
 }
@@ -383,7 +385,7 @@
   background: white;
   font-family: "DM Sans", sans-serif;
   font-size: 14px; color: var(--s-navy);
-  outline: none; min-width: 240px;
+  outline: none; min-width: min(100%, 240px);
   transition: border-color 0.2s;
 }
 .sm-search:focus { border-color: var(--s-navy); }
@@ -588,6 +590,28 @@
 
 .sm-header-stack {
   align-items: flex-start;
+}
+
+.sm-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.sm-customer-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sm-history-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--s-border);
+  background: #fafbfd;
 }
 
 @media (max-width: 900px) {

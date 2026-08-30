@@ -123,6 +123,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("khong tim thay nguoi dung"));
         UserResponse userResponse = modelMapper.map(user, UserResponse.class);
+        userResponse.setUserRole(user.getUserRole());
+        userResponse.setUserIsActive(user.getUserIsActive());
         return userResponse;
     }
 
@@ -139,11 +141,10 @@ public class UserServiceImpl implements UserService {
         if (req.getFullname() != null) user.setFullname(req.getFullname());
         if (req.getPhone() != null) user.setPhone(req.getPhone());
         if (req.getAddress() != null) user.setAddress(req.getAddress());
-        //if (req.getGender() != null) user.setUserGender(req.getGender());
+        if (req.getGender() != null) user.setUserGender(req.getGender());
 
         userRepository.save(user);
         return "Cap nhat thong tin thanh cong";
     }
 
 }
-

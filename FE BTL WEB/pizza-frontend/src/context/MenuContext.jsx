@@ -1,9 +1,18 @@
-import { createContext, useContext, useMemo, useState } from "react"
-import { INITIAL_MENU_ITEMS, MENU_CATEGORIES, MENU_STATUS, getCategoryLabel } from "../data/menuData"
+﻿import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { INITIAL_MENU_ITEMS, MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
+import {
+  createStaffItemApi,
+  deleteStaffItemApi,
+  fetchPublicItemsApi,
+  fetchStaffItemsApi,
+  updateStaffItemApi,
+} from "../services/menuApi"
+import { getApiErrorMessage } from "../services/apiClient"
+import { normalizeMenuList } from "../services/responseAdapters"
 
 const MenuContext = createContext(null)
 
-function loadMenu() {
+function loadMenuFallback() {
   try {
     const saved = localStorage.getItem("hs_menu")
     return saved ? JSON.parse(saved) : INITIAL_MENU_ITEMS
@@ -12,64 +21,122 @@ function loadMenu() {
   }
 }
 
-function saveMenu(items) {
+function saveMenuFallback(items) {
   localStorage.setItem("hs_menu", JSON.stringify(items))
 }
 
+function normalizeSearchText(value) {
+  return (value || "").trim().toLowerCase()
+}
+
+function toAvailabilityString(status) {
+  return status === MENU_STATUS.available ? "true" : "false"
+}
+
+export function searchMenuItems(items, builder = {}) {
+  const {
+    name = "",
+    category = "",
+    leftPrice = null,
+    rightPrice = null,
+    isAvailable = "",
+  } = builder
+
+  const normalizedName = normalizeSearchText(name)
+  const normalizedCategory = normalizeSearchText(category)
+  const normalizedAvailable = String(isAvailable || "").trim().toLowerCase()
+  const minPrice = leftPrice === "" || leftPrice == null ? null : Number(leftPrice)
+  const maxPrice = rightPrice === "" || rightPrice == null ? null : Number(rightPrice)
+
+  return items.filter(item => {
+    const matchesName =
+      !normalizedName ||
+      item.name.toLowerCase().includes(normalizedName) ||
+      item.desc?.toLowerCase().includes(normalizedName) ||
+      item.ingredients?.toLowerCase().includes(normalizedName)
+
+    const matchesCategory =
+      !normalizedCategory ||
+      item.cat.toLowerCase() === normalizedCategory ||
+      item.catLabel?.toLowerCase() === normalizedCategory
+
+    const matchesMinPrice = minPrice == null || item.price >= minPrice
+    const matchesMaxPrice = maxPrice == null || item.price <= maxPrice
+
+    const matchesAvailable =
+      !normalizedAvailable ||
+      toAvailabilityString(item.status) === normalizedAvailable
+
+    return matchesName && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesAvailable
+  })
+}
+
 export function MenuProvider({ children }) {
-  const [items, setItems] = useState(loadMenu)
+  const [items, setItems] = useState(loadMenuFallback)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [isBackendSynced, setIsBackendSynced] = useState(false)
 
-  function createItem(data) {
-    const nextItem = {
-      id: Date.now(),
-      badge: null,
-      origin: "",
-      ingredients: "",
-      story: "",
-      status: MENU_STATUS.available,
-      ...data,
-      price: Number(data.price),
+  useEffect(() => {
+    async function loadFromApi() {
+      try {
+        setLoading(true)
+        const apiItems = await fetchPublicItemsApi()
+        const normalized = normalizeMenuList(apiItems)
+        if (normalized.length) {
+          setItems(normalized)
+          saveMenuFallback(normalized)
+          setIsBackendSynced(true)
+        }
+        setError("")
+      } catch (apiError) {
+        setItems(loadMenuFallback())
+        setIsBackendSynced(false)
+        setError(getApiErrorMessage(apiError, "Khong the tai menu tu server"))
+      } finally {
+        setLoading(false)
+      }
     }
-    const updated = [...items, nextItem]
-    setItems(updated)
-    saveMenu(updated)
+
+    loadFromApi()
+  }, [])
+
+  async function refreshFromStaffApi() {
+    const apiItems = await fetchStaffItemsApi()
+    const normalized = normalizeMenuList(apiItems)
+    if (normalized.length) {
+      setItems(normalized)
+      saveMenuFallback(normalized)
+      setIsBackendSynced(true)
+    }
+    return normalized
   }
 
-  function updateItem(id, changes) {
-    const updated = items.map(item =>
-      item.id === id
-        ? {
-            ...item,
-            ...changes,
-            price: changes.price !== undefined ? Number(changes.price) : item.price,
-          }
-        : item
-    )
-    setItems(updated)
-    saveMenu(updated)
+  async function createItem(data) {
+    await createStaffItemApi(data)
+    return refreshFromStaffApi()
   }
 
-  function deleteItem(id) {
-    const updated = items.filter(item => item.id !== id)
-    setItems(updated)
-    saveMenu(updated)
+  async function updateItem(id, changes) {
+    await updateStaffItemApi(id, changes)
+    return refreshFromStaffApi()
   }
 
-  function toggleItemStatus(id) {
-    const updated = items.map(item =>
-      item.id === id
-        ? {
-            ...item,
-            status: item.status === MENU_STATUS.available ? MENU_STATUS.outOfStock : MENU_STATUS.available,
-          }
-        : item
-    )
-    setItems(updated)
-    saveMenu(updated)
+  async function deleteItem(id) {
+    await deleteStaffItemApi(id)
+    return refreshFromStaffApi()
+  }
+
+  async function toggleItemStatus(id) {
+    const current = items.find(item => item.id === id)
+    if (!current) return []
+    const nextStatus = current.status === MENU_STATUS.available ? MENU_STATUS.outOfStock : MENU_STATUS.available
+    await updateStaffItemApi(id, { ...current, status: nextStatus })
+    return refreshFromStaffApi()
   }
 
   const value = useMemo(() => {
-    const normalizedItems = items.map(item => ({ ...item, catLabel: getCategoryLabel(item.cat) }))
+    const normalizedItems = items
     const activeItems = normalizedItems.filter(item => item.status === MENU_STATUS.available)
     const groupedSections = MENU_CATEGORIES.map(category => ({
       id: category.key,
@@ -82,12 +149,26 @@ export function MenuProvider({ children }) {
       activeItems,
       groupedSections,
       categories: MENU_CATEGORIES,
+      loading,
+      error,
+      isBackendSynced,
+      searchItems: searchBuilder => searchMenuItems(normalizedItems, searchBuilder),
+      refreshItems: async builder => {
+        const apiItems = await fetchPublicItemsApi(builder)
+        const normalized = normalizeMenuList(apiItems)
+        if (normalized.length) {
+          setItems(normalized)
+          saveMenuFallback(normalized)
+          setIsBackendSynced(true)
+        }
+        return normalized
+      },
       createItem,
       updateItem,
       deleteItem,
       toggleItemStatus,
     }
-  }, [items])
+  }, [error, isBackendSynced, items, loading])
 
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>
 }
@@ -100,11 +181,17 @@ export function useMenu() {
       activeItems: [],
       groupedSections: [],
       categories: MENU_CATEGORIES,
-      createItem: () => {},
-      updateItem: () => {},
-      deleteItem: () => {},
-      toggleItemStatus: () => {},
+      loading: false,
+      error: "",
+      isBackendSynced: false,
+      searchItems: () => [],
+      refreshItems: async () => [],
+      createItem: async () => [],
+      updateItem: async () => [],
+      deleteItem: async () => [],
+      toggleItemStatus: async () => [],
     }
   }
   return context
 }
+

@@ -4,6 +4,7 @@ import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.entity.Item;
 import com.javaweb.entity.Order;
 import com.javaweb.entity.OrderDetail;
+import com.javaweb.entity.OrderDetailId;
 import com.javaweb.enums.ItemAvailable;
 import com.javaweb.model.request.OrderDetailRequest;
 import com.javaweb.repository.ItemRepository;
@@ -59,6 +60,11 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     @Transactional
     @Override
     public void saveDetails(List<OrderDetail> details) {
+        for (OrderDetail detail : details) {
+            if (detail.getId() == null && detail.getOrder() != null && detail.getItem() != null) {
+                detail.setId(new OrderDetailId(detail.getOrder().getId(), detail.getItem().getId()));
+            }
+        }
         orderDetailRepository.saveAll(details);
     }
 }
