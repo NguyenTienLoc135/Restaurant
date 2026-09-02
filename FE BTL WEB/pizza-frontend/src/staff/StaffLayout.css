@@ -407,28 +407,52 @@
 .sm-filter-tab.active { background: var(--s-navy); border-color: var(--s-navy); color: white; font-weight: 700; }
 
 /* ══════════ DRIVER VIEW ══════════ */
-.smd-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+.smd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .smd-card {
   background: white;
   border: 1px solid var(--s-border);
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 14px;
+  padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 16px;
   transition: box-shadow 0.2s;
 }
 .smd-card:hover { box-shadow: 0 8px 28px rgba(15,32,68,0.08); }
 
-.smd-card-header { display: flex; align-items: center; justify-content: space-between; }
+.smd-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .smd-id { font-family: "Cormorant Garamond", serif; font-size: 22px; font-weight: 600; color: var(--s-navy); }
 
-.smd-info { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #374151; line-height: 1.5; }
+.smd-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}
+.smd-info p { margin: 0; }
 
-.smd-actions { margin-top: 4px; }
-.smd-actions .sm-btn { width: 100%; justify-content: center; }
+.smd-actions {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+.smd-actions .sm-btn {
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+}
 
 .sdl-profile-trigger {
   background: transparent;

@@ -53,7 +53,7 @@ function DriverSection({ title, emptyText, orders, renderActions }) {
           <p style={{ fontSize: 16 }}>{emptyText}</p>
         </div>
       ) : (
-        <div className="smd-grid">
+        <div className="smd-list">
           {orders.map(order => (
             <div key={order.id} className="smd-card">
               <div className="smd-card-header">

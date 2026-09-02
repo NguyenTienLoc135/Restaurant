@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useMenu } from "../../context/MenuContext"
 import { MENU_STATUS } from "../../data/menuData"
 import { getApiErrorMessage } from "../../services/apiClient"
@@ -6,14 +6,85 @@ import { fetchPublicItemDetailApi } from "../../services/menuApi"
 import { normalizeMenuItemDetailResponse } from "../../services/responseAdapters"
 import "./Menu.css"
 
+const SORT_OPTIONS = [
+  ["default", "Mặc định"],
+  ["asc", "Giá tăng"],
+  ["desc", "Giá giảm"],
+]
+
+const AVAILABILITY_OPTIONS = [
+  ["", "Tất cả"],
+  ["true", "Có sẵn"],
+  ["false", "Hết món"],
+]
+
 function fmtPrice(price) {
   return `${price.toLocaleString("vi-VN")}₫`
+}
+
+function normalizeKeyword(value) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+}
+
+function createDefaultFilters(maxPrice) {
+  return {
+    search: "",
+    category: "",
+    availability: "",
+    sort: "default",
+    priceMin: 0,
+    priceMax: maxPrice,
+  }
+}
+
+function sanitizeFilters(filters, maxPrice, previousMaxPrice = maxPrice) {
+  const nextMin = Math.min(Math.max(Number(filters.priceMin) || 0, 0), maxPrice)
+  const rawMax = Number(filters.priceMax) || maxPrice
+  const maxSource = rawMax === previousMaxPrice ? maxPrice : rawMax
+  const nextMax = Math.min(Math.max(maxSource, nextMin), maxPrice)
+
+  return {
+    search: (filters.search || "").trim(),
+    category: filters.category || "",
+    availability: filters.availability || "",
+    sort: filters.sort || "default",
+    priceMin: nextMin,
+    priceMax: nextMax,
+  }
+}
+
+function hasActiveFilters(filters, maxPrice) {
+  return (
+    filters.search.trim() !== "" ||
+    filters.category !== "" ||
+    filters.availability !== "" ||
+    filters.sort !== "default" ||
+    filters.priceMin > 0 ||
+    filters.priceMax < maxPrice
+  )
+}
+
+function areFiltersEqual(left, right) {
+  return (
+    left.search === right.search &&
+    left.category === right.category &&
+    left.availability === right.availability &&
+    left.sort === right.sort &&
+    left.priceMin === right.priceMin &&
+    left.priceMax === right.priceMax
+  )
 }
 
 function DishDetail({ item, loading, error, onClose }) {
   return (
     <div className="dish-detail-panel">
-      <button className="dd-close" onClick={onClose}>×</button>
+      <button className="dd-close" onClick={onClose} aria-label="Đóng chi tiết món">
+        ×
+      </button>
       <div className="dd-img-wrap">
         <img src={item.img} alt={item.name} draggable="false" />
         <div className="dd-img-overlay" />
@@ -22,14 +93,34 @@ function DishDetail({ item, loading, error, onClose }) {
         <span className="dd-cat">{item.catLabel}</span>
         <h3 className="dd-name">{item.name}</h3>
         <p className="dd-price">{fmtPrice(item.price)}</p>
-        {item.status === MENU_STATUS.outOfStock && <p className="dd-val" style={{ color: "#b91c1c", fontWeight: 700 }}>Hết món</p>}
+        {item.status === MENU_STATUS.outOfStock && <p className="dd-stock dd-stock-out">Hết món</p>}
         {loading && <p className="dd-val">Đang tải chi tiết món...</p>}
-        {error && <p className="dd-val" style={{ color: "#b91c1c" }}>{error}</p>}
+        {error && <p className="dd-val dd-error">{error}</p>}
 
-        {item.desc && <div className="dd-story"><span className="dd-label">Mô tả</span><p className="dd-story-text">{item.desc}</p></div>}
-        {item.origin && <div className="dd-row"><span className="dd-label">Nguồn gốc</span><span className="dd-val">{item.origin}</span></div>}
-        {item.ingredients && <div className="dd-row"><span className="dd-label">Nguyên liệu</span><span className="dd-val">{item.ingredients}</span></div>}
-        {item.story && <div className="dd-story"><span className="dd-label">Câu chuyện</span><p className="dd-story-text">{item.story}</p></div>}
+        {item.desc && (
+          <div className="dd-story">
+            <span className="dd-label">Mô tả</span>
+            <p className="dd-story-text">{item.desc}</p>
+          </div>
+        )}
+        {item.origin && (
+          <div className="dd-row">
+            <span className="dd-label">Nguồn gốc</span>
+            <span className="dd-val">{item.origin}</span>
+          </div>
+        )}
+        {item.ingredients && (
+          <div className="dd-row">
+            <span className="dd-label">Nguyên liệu</span>
+            <span className="dd-val">{item.ingredients}</span>
+          </div>
+        )}
+        {item.story && (
+          <div className="dd-story">
+            <span className="dd-label">Câu chuyện</span>
+            <p className="dd-story-text">{item.story}</p>
+          </div>
+        )}
         {!loading && !error && !item.desc && !item.origin && !item.ingredients && !item.story && (
           <p className="dd-val">Chưa có thông tin chi tiết cho món này.</p>
         )}
@@ -105,18 +196,30 @@ function DragScrollRow({ items }) {
   }
 
   return (
-    <div className="scroll-viewport" ref={viewportRef} onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onTouchMove={() => expanded !== null && setExpanded(null)}>
+    <div
+      className="scroll-viewport"
+      ref={viewportRef}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+      onTouchMove={() => expanded !== null && setExpanded(null)}
+    >
       <div className="scroll-track">
         {items.map((item, index) => (
           <div key={item.id} className={`dish-card-wrap ${expanded === index ? "is-expanded" : ""}`}>
-            <div className={`dish-card ${expanded === index ? "hidden" : ""}`} onClick={() => handleCardClick(index, item)} style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.75 : 1 }}>
+            <div
+              className={`dish-card ${expanded === index ? "hidden" : ""}`}
+              onClick={() => handleCardClick(index, item)}
+              style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.75 : 1 }}
+            >
               <div className="dish-card-img">
                 <img src={item.img} alt={item.name} loading="lazy" draggable="false" />
-                <div className="dish-card-hover-hint"><span>{item.status === MENU_STATUS.outOfStock ? "Tạm hết món" : "Xem chi tiết"}</span></div>
+                <div className="dish-card-hover-hint">
+                  <span>{item.status === MENU_STATUS.outOfStock ? "Tạm hết món" : "Xem chi tiết"}</span>
+                </div>
                 {item.status === MENU_STATUS.outOfStock && (
-                  <span style={{ position: "absolute", top: 14, right: 14, background: "#991b1b", color: "#fff", padding: "6px 10px", fontSize: 12, letterSpacing: 1, textTransform: "uppercase" }}>
-                    Hết món
-                  </span>
+                  <span className="dish-card-badge">Hết món</span>
                 )}
               </div>
               <div className="dish-card-info">
@@ -144,23 +247,27 @@ function FilteredGrid({ items, onClear }) {
     <div className="filtered-section">
       <div className="filtered-header">
         <span className="filtered-count">{items.length} món</span>
-        <button className="filtered-clear" onClick={onClear}>× Xóa bộ lọc</button>
+        <button className="filtered-clear" onClick={onClear}>
+          × Xóa bộ lọc
+        </button>
       </div>
       {items.length === 0 ? (
         <div className="no-result">
-          <p>Không tìm thấy món phù hợp</p>
+          <p>Không tìm thấy món phù hợp.</p>
           <button onClick={onClear}>Xóa bộ lọc</button>
         </div>
       ) : (
         <div className="filtered-grid">
           {items.map(item => (
             <div key={item.id} className="fg-card" style={{ opacity: item.status === MENU_STATUS.outOfStock ? 0.7 : 1 }}>
-              <div className="fg-img"><img src={item.img} alt={item.name} loading="lazy" /></div>
+              <div className="fg-img">
+                <img src={item.img} alt={item.name} loading="lazy" />
+              </div>
               <div className="fg-info">
                 <span className="fg-cat">{item.catLabel}</span>
                 <h3 className="fg-name">{item.name}</h3>
                 <p className="fg-price">{fmtPrice(item.price)}</p>
-                {item.status === MENU_STATUS.outOfStock && <p style={{ color: "#b91c1c", fontWeight: 700 }}>Hết món</p>}
+                {item.status === MENU_STATUS.outOfStock && <p className="fg-stock-out">Hết món</p>}
               </div>
             </div>
           ))}
@@ -173,32 +280,47 @@ function FilteredGrid({ items, onClear }) {
 export default function Menu() {
   const { groupedSections, items, categories, searchItems } = useMenu()
   const [activeSection, setActiveSection] = useState(null)
-  const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("")
-  const [availability, setAvailability] = useState("")
-  const [sort, setSort] = useState("default")
-  const [priceMin, setPriceMin] = useState(0)
-  const [priceMax, setPriceMax] = useState(() => {
-    const max = Math.max(...items.map(item => item.price), 0)
-    return Math.ceil(max / 50000) * 50000 || 500000
-  })
+  const maxPrice = useMemo(() => Math.ceil((Math.max(...items.map(item => item.price), 0) || 500000) / 50000) * 50000, [items])
+  const [draftFilters, setDraftFilters] = useState(() => createDefaultFilters(maxPrice))
+  const [appliedFilters, setAppliedFilters] = useState(() => createDefaultFilters(maxPrice))
   const [showSuggest, setShowSuggest] = useState(false)
+  const [menuControlsHeight, setMenuControlsHeight] = useState(0)
   const sectionRefs = useRef({})
   const searchRef = useRef(null)
+  const menuControlsRef = useRef(null)
+  const previousMaxPriceRef = useRef(maxPrice)
 
   useEffect(() => {
-    const max = Math.max(...items.map(item => item.price), 0)
-    setPriceMax(Math.ceil(max / 50000) * 50000 || 500000)
-  }, [items])
+    const previousMaxPrice = previousMaxPriceRef.current
 
-  const maxPrice = Math.ceil((Math.max(...items.map(item => item.price), 0) || 500000) / 50000) * 50000
-  const isFiltering =
-    search.trim() !== "" ||
-    category !== "" ||
-    availability !== "" ||
-    sort !== "default" ||
-    priceMin > 0 ||
-    priceMax < maxPrice
+    setDraftFilters(prev => sanitizeFilters(prev, maxPrice, previousMaxPrice))
+    setAppliedFilters(prev => sanitizeFilters(prev, maxPrice, previousMaxPrice))
+
+    previousMaxPriceRef.current = maxPrice
+  }, [maxPrice])
+
+  useEffect(() => {
+    function updateHeight() {
+      setMenuControlsHeight(menuControlsRef.current?.offsetHeight || 0)
+    }
+
+    updateHeight()
+
+    if (typeof ResizeObserver === "undefined" || !menuControlsRef.current) {
+      window.addEventListener("resize", updateHeight)
+      return () => window.removeEventListener("resize", updateHeight)
+    }
+
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(menuControlsRef.current)
+
+    return () => observer.disconnect()
+  }, [])
+
+  const isFiltering = hasActiveFilters(appliedFilters, maxPrice)
+  const hasPendingChanges = !areFiltersEqual(draftFilters, appliedFilters)
+  const normalizedDraftKeyword = normalizeKeyword(draftFilters.search)
+  const normalizedAppliedKeyword = normalizeKeyword(appliedFilters.search)
 
   useEffect(() => {
     if (isFiltering) return
@@ -218,96 +340,236 @@ export default function Menu() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const builder = {
-    name: search,
-    category,
-    leftPrice: priceMin,
-    rightPrice: priceMax,
-    isAvailable: availability,
+  const suggestions = useMemo(() => {
+    if (!normalizedDraftKeyword) return []
+    return items
+      .filter(item => normalizeKeyword(item.name).includes(normalizedDraftKeyword))
+      .slice(0, 6)
+  }, [items, normalizedDraftKeyword])
+
+  const filteredItems = useMemo(() => {
+    const baseItems = searchItems({
+      category: appliedFilters.category,
+      leftPrice: appliedFilters.priceMin,
+      rightPrice: appliedFilters.priceMax,
+      isAvailable: appliedFilters.availability,
+    })
+
+    const keywordMatchedItems = normalizedAppliedKeyword
+      ? baseItems.filter(item => normalizeKeyword(item.name).includes(normalizedAppliedKeyword))
+      : baseItems
+
+    if (appliedFilters.sort === "asc") {
+      return [...keywordMatchedItems].sort((left, right) => left.price - right.price)
+    }
+
+    if (appliedFilters.sort === "desc") {
+      return [...keywordMatchedItems].sort((left, right) => right.price - left.price)
+    }
+
+    return keywordMatchedItems
+  }, [appliedFilters, normalizedAppliedKeyword, searchItems])
+
+  function updateDraftFilter(key, value) {
+    setDraftFilters(prev => ({ ...prev, [key]: value }))
   }
 
-  const suggestions = search.trim() ? searchItems({ name: search }).slice(0, 6) : []
-
-  let filteredItems = searchItems(builder)
-  if (sort === "asc") filteredItems = [...filteredItems].sort((a, b) => a.price - b.price)
-  if (sort === "desc") filteredItems = [...filteredItems].sort((a, b) => b.price - a.price)
+  function applyFilters() {
+    const nextFilters = sanitizeFilters(draftFilters, maxPrice)
+    setDraftFilters(nextFilters)
+    setAppliedFilters(nextFilters)
+    setShowSuggest(false)
+  }
 
   function clearFilters() {
-    setSearch("")
-    setCategory("")
-    setAvailability("")
-    setSort("default")
-    setPriceMin(0)
-    setPriceMax(maxPrice)
+    const defaultFilters = createDefaultFilters(maxPrice)
+    setDraftFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setShowSuggest(false)
   }
 
-  const minPct = (priceMin / maxPrice) * 100
-  const maxPct = (priceMax / maxPrice) * 100
+  const minPct = maxPrice === 0 ? 0 : (draftFilters.priceMin / maxPrice) * 100
+  const maxPct = maxPrice === 0 ? 100 : (draftFilters.priceMax / maxPrice) * 100
+  const statusMessage = hasPendingChanges
+    ? "Bạn đã thay đổi bộ lọc. Bấm Search để cập nhật kết quả."
+    : isFiltering
+      ? `${filteredItems.length} món đang khớp với điều kiện đã áp dụng.`
+      : "Hiện đang hiển thị toàn bộ menu. Bạn có thể nhập từ khóa và chọn bộ lọc rồi bấm Search."
 
   return (
-    <div className="menu-page">
-      <div className="menu-hero"><h1 className="menu-hero-title">Menu</h1></div>
+    <div className="menu-page" style={{ "--menu-controls-offset": `${menuControlsHeight}px` }}>
+      <div className="menu-hero">
+        <h1 className="menu-hero-title">Menu</h1>
+      </div>
 
-      <div className="menu-controls">
-        <div className="mc-inner">
-          <div className="mc-search-wrap" ref={searchRef}>
-            <div className="mc-search-box">
-              <input className="mc-search-input" placeholder="Tìm món ăn..." value={search} onChange={event => { setSearch(event.target.value); setShowSuggest(true) }} onFocus={() => setShowSuggest(true)} />
-              {search && <button className="mc-search-clear" onClick={() => { setSearch(""); setShowSuggest(false) }}>×</button>}
+      <div className="menu-controls" ref={menuControlsRef}>
+        <div className="mc-shell">
+          <div className="mc-topbar">
+            <div className="mc-search-panel">
+              <span className="mc-group-title">Tìm món ăn</span>
+              <div className="mc-search-wrap" ref={searchRef}>
+                <div className="mc-search-box">
+                  <input
+                    className="mc-search-input"
+                    placeholder="Tìm món ăn theo tên..."
+                    value={draftFilters.search}
+                    onChange={event => {
+                      updateDraftFilter("search", event.target.value)
+                      setShowSuggest(true)
+                    }}
+                    onFocus={() => setShowSuggest(true)}
+                    onKeyDown={event => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        applyFilters()
+                      }
+                    }}
+                  />
+                  {draftFilters.search && (
+                    <button
+                      className="mc-search-clear"
+                      onClick={() => {
+                        updateDraftFilter("search", "")
+                        setShowSuggest(false)
+                      }}
+                      aria-label="Xóa từ khóa tìm kiếm"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                {showSuggest && suggestions.length > 0 && (
+                  <div className="mc-suggest">
+                    {suggestions.map(item => (
+                      <button
+                        key={item.id}
+                        className="mc-suggest-item"
+                        onMouseDown={() => {
+                          updateDraftFilter("search", item.name)
+                          setShowSuggest(false)
+                        }}
+                      >
+                        <img src={item.img} alt="" />
+                        <span className="mc-sug-name">{item.name}</span>
+                        <span className="mc-sug-price">{fmtPrice(item.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="mc-helper-text">Gõ tên món, chọn thêm điều kiện nếu cần, sau đó bấm Search để lọc.</p>
             </div>
 
-            {showSuggest && suggestions.length > 0 && (
-              <div className="mc-suggest">
-                {suggestions.map(item => (
-                  <button key={item.id} className="mc-suggest-item" onMouseDown={() => { setSearch(item.name); setShowSuggest(false) }}>
-                    <img src={item.img} alt="" />
-                    <span className="mc-sug-name">{item.name}</span>
-                    <span className="mc-sug-price">{fmtPrice(item.price)}</span>
+            <div className="mc-actions">
+              <button className="mc-action-btn mc-action-btn-secondary" onClick={clearFilters}>
+                Đặt lại
+              </button>
+              <button className="mc-action-btn mc-action-btn-primary" onClick={applyFilters}>
+                Search
+              </button>
+            </div>
+          </div>
+
+          <div className="mc-grid">
+            <div className="mc-group">
+              <span className="mc-group-title">Sắp xếp theo giá</span>
+              <div className="mc-chip-row">
+                {SORT_OPTIONS.map(([key, label]) => (
+                  <button
+                    key={key}
+                    className={`mc-sort-btn ${draftFilters.sort === key ? "active" : ""}`}
+                    onClick={() => updateDraftFilter("sort", key)}
+                  >
+                    {label}
                   </button>
                 ))}
               </div>
-            )}
-          </div>
-
-          <div className="mc-sort">
-            <span className="mc-sort-label">Sắp xếp:</span>
-            {[["default", "Mặc định"], ["asc", "Giá tăng"], ["desc", "Giá giảm"]].map(([key, label]) => (
-              <button key={key} className={`mc-sort-btn ${sort === key ? "active" : ""}`} onClick={() => setSort(key)}>{label}</button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mc-inner" style={{ marginTop: 12 }}>
-          <div className="mc-sort">
-            <span className="mc-sort-label">Danh mục:</span>
-            <button className={`mc-sort-btn ${category === "" ? "active" : ""}`} onClick={() => setCategory("")}>Tất cả</button>
-            {categories.map(item => (
-              <button key={item.key} className={`mc-sort-btn ${category === item.key ? "active" : ""}`} onClick={() => setCategory(item.key)}>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mc-inner" style={{ marginTop: 12 }}>
-          <div className="mc-sort">
-            <span className="mc-sort-label">Trạng thái:</span>
-            <button className={`mc-sort-btn ${availability === "" ? "active" : ""}`} onClick={() => setAvailability("")}>Tất cả</button>
-            <button className={`mc-sort-btn ${availability === "true" ? "active" : ""}`} onClick={() => setAvailability("true")}>Có sẵn</button>
-            <button className={`mc-sort-btn ${availability === "false" ? "active" : ""}`} onClick={() => setAvailability("false")}>Hết món</button>
-          </div>
-        </div>
-
-        <div className="mc-slider-row">
-          <div className="mc-slider-inner">
-            <span className="mc-slider-label">Khoảng giá:</span>
-            <span className="mc-slider-val mc-slider-val-min">{fmtPrice(priceMin)}</span>
-            <div className="mc-slider-wrap">
-              <div className="mc-slider-track"><div className="mc-slider-fill" style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }} /></div>
-              <input type="range" className="mc-slider mc-slider-min" min={0} max={maxPrice} step={10000} value={priceMin} onChange={event => { const value = Number(event.target.value); if (value <= priceMax - 50000) setPriceMin(value) }} />
-              <input type="range" className="mc-slider mc-slider-max" min={0} max={maxPrice} step={10000} value={priceMax} onChange={event => { const value = Number(event.target.value); if (value >= priceMin + 50000) setPriceMax(value) }} />
             </div>
-            <span className="mc-slider-val">{fmtPrice(priceMax)}</span>
+
+            <div className="mc-group">
+              <span className="mc-group-title">Trạng thái món</span>
+              <div className="mc-chip-row">
+                {AVAILABILITY_OPTIONS.map(([key, label]) => (
+                  <button
+                    key={key || "all"}
+                    className={`mc-sort-btn ${draftFilters.availability === key ? "active" : ""}`}
+                    onClick={() => updateDraftFilter("availability", key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mc-group mc-group-wide">
+              <span className="mc-group-title">Danh mục món ăn</span>
+              <div className="mc-chip-row">
+                <button
+                  className={`mc-sort-btn ${draftFilters.category === "" ? "active" : ""}`}
+                  onClick={() => updateDraftFilter("category", "")}
+                >
+                  Tất cả
+                </button>
+                {categories.map(item => (
+                  <button
+                    key={item.key}
+                    className={`mc-sort-btn ${draftFilters.category === item.key ? "active" : ""}`}
+                    onClick={() => updateDraftFilter("category", item.key)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mc-group mc-group-wide">
+              <div className="mc-price-header">
+                <span className="mc-group-title">Khoảng giá</span>
+                <div className="mc-price-values">
+                  <span className="mc-slider-val mc-slider-val-min">{fmtPrice(draftFilters.priceMin)}</span>
+                  <span className="mc-price-divider">-</span>
+                  <span className="mc-slider-val">{fmtPrice(draftFilters.priceMax)}</span>
+                </div>
+              </div>
+              <div className="mc-slider-wrap">
+                <div className="mc-slider-track">
+                  <div className="mc-slider-fill" style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }} />
+                </div>
+                <input
+                  type="range"
+                  className="mc-slider mc-slider-min"
+                  min={0}
+                  max={maxPrice}
+                  step={10000}
+                  value={draftFilters.priceMin}
+                  onChange={event => {
+                    const value = Number(event.target.value)
+                    if (value <= draftFilters.priceMax - 50000) {
+                      updateDraftFilter("priceMin", value)
+                    }
+                  }}
+                />
+                <input
+                  type="range"
+                  className="mc-slider mc-slider-max"
+                  min={0}
+                  max={maxPrice}
+                  step={10000}
+                  value={draftFilters.priceMax}
+                  onChange={event => {
+                    const value = Number(event.target.value)
+                    if (value >= draftFilters.priceMin + 50000) {
+                      updateDraftFilter("priceMax", value)
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mc-status-line">
+            <span>{statusMessage}</span>
           </div>
         </div>
       </div>
@@ -315,7 +577,11 @@ export default function Menu() {
       {!isFiltering && (
         <nav className="category-nav">
           {groupedSections.map(section => (
-            <button key={section.id} className={`cat-btn ${activeSection === section.id ? "active" : ""}`} onClick={() => sectionRefs.current[section.id]?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+            <button
+              key={section.id}
+              className={`cat-btn ${activeSection === section.id ? "active" : ""}`}
+              onClick={() => sectionRefs.current[section.id]?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
               {section.category}
             </button>
           ))}
@@ -327,8 +593,17 @@ export default function Menu() {
       ) : (
         <div className="menu-sections">
           {groupedSections.map(section => (
-            <section key={section.id} className="menu-section" data-id={section.id} ref={element => { sectionRefs.current[section.id] = element }}>
-              <div className="section-header"><h2 className="section-title">{section.category}</h2></div>
+            <section
+              key={section.id}
+              className="menu-section"
+              data-id={section.id}
+              ref={element => {
+                sectionRefs.current[section.id] = element
+              }}
+            >
+              <div className="section-header">
+                <h2 className="section-title">{section.category}</h2>
+              </div>
               <DragScrollRow items={section.items} />
             </section>
           ))}
