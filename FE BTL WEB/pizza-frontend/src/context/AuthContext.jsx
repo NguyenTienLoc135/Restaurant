@@ -16,7 +16,6 @@ import {
 import { getApiErrorMessage } from "../services/apiClient"
 import { cancelMyOrderApi, createOrderApi, getMyOrdersApi, getOrderDetailsApi } from "../services/orderApi"
 import { createBookingApi, getMyBookingsApi } from "../services/bookingApi"
-import { loadBookings, loadOrders } from "../data/staffData"
 
 const AuthContext = createContext(null)
 const USER_SESSION_KEY = "hs_user"
@@ -143,8 +142,8 @@ export function AuthProvider({ children }) {
       try {
         const [nextUser, nextOrders, nextBookings] = await Promise.all([
           fetchCurrentUser(token),
-          fetchOrderHistory(token).catch(() => normalizeOrderList(loadOrders())),
-          fetchBookingHistory(token).catch(() => normalizeBookingList(loadBookings())),
+          fetchOrderHistory(token).catch(() => []),
+          fetchBookingHistory(token).catch(() => []),
         ])
         setSession({ user: nextUser, token })
         saveStorage(USER_SESSION_KEY, nextUser)
@@ -180,7 +179,7 @@ export function AuthProvider({ children }) {
         setOrders(nextOrders)
       } catch {
         if (!active) return
-        setOrders(normalizeOrderList(loadOrders()))
+        setOrders([])
       } finally {
         if (!active) return
         setLoadingOrders(false)
@@ -192,7 +191,7 @@ export function AuthProvider({ children }) {
         setBookings(nextBookings)
       } catch {
         if (!active) return
-        setBookings(normalizeBookingList(loadBookings()))
+        setBookings([])
       } finally {
         if (!active) return
         setLoadingBookings(false)
