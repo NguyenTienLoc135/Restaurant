@@ -4,28 +4,72 @@ import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from "../../context/AuthContext"
 import "./Booking.css"
 
-function AddressChip({ restaurant }) {
+function LocationCard({ restaurant }) {
   const [showMap, setShowMap] = useState(false)
+  const closeTimeoutRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        window.clearTimeout(closeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  function openMap() {
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+    setShowMap(true)
+  }
+
+  function scheduleClose() {
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current)
+    }
+
+    closeTimeoutRef.current = window.setTimeout(() => setShowMap(false), 140)
+  }
 
   return (
     <div
-      className="address-chip"
-      onMouseEnter={() => setShowMap(true)}
-      onMouseLeave={() => setShowMap(false)}
+      className={`booking-location-shell ${showMap ? "open" : ""}`}
+      onMouseEnter={openMap}
+      onMouseLeave={scheduleClose}
     >
-      <span className="chip-pin">📍</span>
-      <div className="chip-info">
-        <strong>{restaurant.name}</strong>
-        <small>{restaurant.address}</small>
-      </div>
-      {showMap && (
-        <div className="map-popup-chip">
-          <iframe src={restaurant.map} loading="lazy" title="map" />
-          <a href={restaurant.mapLink} target="_blank" rel="noreferrer" className="open-map">
-            Mở Google Maps ↗
-          </a>
+      <div
+        className="booking-location-card"
+        role="button"
+        tabIndex={0}
+        onFocus={openMap}
+        onBlur={scheduleClose}
+        aria-expanded={showMap}
+      >
+        <div className="booking-location-head">
+          <span className="booking-location-icon">📍</span>
+          <div className="booking-location-copy">
+            <h3>{restaurant.name}</h3>
+            <p className="booking-location-address">{restaurant.address}</p>
+          </div>
         </div>
-      )}
+      </div>
+
+      <div
+        className={`map-popup-card ${showMap ? "open" : ""}`}
+        onMouseEnter={openMap}
+        onMouseLeave={scheduleClose}
+      >
+        <iframe
+          src={restaurant.map}
+          loading="lazy"
+          title={`Google Maps - ${restaurant.name}`}
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+        <a href={restaurant.mapLink} target="_blank" rel="noreferrer" className="open-map">
+          Mở Google Maps →
+        </a>
+      </div>
     </div>
   )
 }
@@ -64,6 +108,7 @@ function Booking() {
 
   useEffect(() => {
     if (!countdownActive) return
+
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -72,9 +117,11 @@ function Booking() {
           setAvailable(null)
           return HOLD
         }
+
         return prev - 1
       })
     }, 1000)
+
     return () => clearInterval(timerRef.current)
   }, [countdownActive])
 
@@ -92,6 +139,7 @@ function Booking() {
 
   function handleSearch() {
     if (!time) return
+
     setLoading(true)
     setTimeout(() => {
       setLoading(false)
@@ -179,109 +227,141 @@ function Booking() {
           <p className="city-branch">Ba Đình</p>
         </div>
 
-        <div className="booking-card">
-          <div className="card-header">
-            <h2 className="card-title">Đặt bàn trực tuyến</h2>
-            <p className="card-sub">Tìm bàn phù hợp với lịch của bạn</p>
-          </div>
-
-          <div className="card-body">
-            <div className="search-row">
-              <div className="sfield">
-                <label>Số người</label>
-                <select value={people} onChange={event => setPeople(event.target.value)}>
-                  {Array.from({ length: 29 }, (_, index) => (
-                    <option key={index} value={index + 2}>{index + 2} người</option>
-                  ))}
-                </select>
+        <div className="booking-main">
+          <div className="booking-top-row">
+            <div className="booking-card">
+              <div className="card-header">
+                <h2 className="card-title">Đặt bàn trực tuyến</h2>
+                <p className="card-sub">Tìm bàn phù hợp với lịch của bạn</p>
               </div>
 
-              <div className="sfield">
-                <label>Ngày</label>
-                <DatePicker selected={date} onChange={nextDate => setDate(nextDate)} dateFormat="dd/MM/yyyy" minDate={new Date()} />
-              </div>
+              <div className="card-body">
+                <div className="search-row">
+                  <div className="sfield">
+                    <label>Số người</label>
+                    <select value={people} onChange={event => setPeople(Number(event.target.value))}>
+                      {Array.from({ length: 29 }, (_, index) => (
+                        <option key={index} value={index + 2}>
+                          {index + 2} người
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="sfield">
-                <label>Giờ</label>
-                <select value={time} onChange={event => setTime(event.target.value)}>
-                  <option value="">Chọn giờ</option>
-                  {times.map(item => <option key={item}>{item}</option>)}
-                </select>
-              </div>
-            </div>
+                  <div className="sfield">
+                    <label>Ngày</label>
+                    <DatePicker
+                      selected={date}
+                      onChange={nextDate => setDate(nextDate || new Date())}
+                      dateFormat="dd/MM/yyyy"
+                      minDate={new Date()}
+                    />
+                  </div>
 
-            <button className={`find-btn ${time ? "active" : ""}`} disabled={!time || loading} onClick={handleSearch}>
-              {loading ? <><span className="spinner" /> Đang tìm...</> : "Tìm bàn trống →"}
-            </button>
-
-            {available === false && <p className="no-table-msg">😔 Không còn bàn trống khung giờ này. Vui lòng chọn giờ khác.</p>}
-            {cancelled && <p className="cancel-toast">✓ Đã huỷ đặt bàn thành công.</p>}
-          </div>
-
-          {available === true && (
-            <div ref={formRef} className="booking-section">
-              <div className="bs-divider"><span>Thông tin đặt bàn</span></div>
-
-              <div className="bs-summary">
-                <div className="bs-tags">
-                  <span className="bs-tag">🕐 {time}</span>
-                  <span className="bs-tag">📅 {date.toLocaleDateString("vi-VN")}</span>
-                  <span className="bs-tag">👥 {people} người</span>
-                </div>
-                <div className="bs-countdown">
-                  <span className="bsc-label">Giữ bàn còn</span>
-                  <span className="bsc-time">
-                    {String(minutes).padStart(2, "0")}
-                    <em>:</em>
-                    {String(seconds).padStart(2, "0")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bs-bar"><div className="bs-bar-fill" style={{ width: `${percent}%` }} /></div>
-
-              <div className="cust-grid">
-                <div className="cf">
-                  <label>Tên *</label>
-                  <input value={firstName} onChange={event => setFirstName(event.target.value)} placeholder="Nhập tên" />
-                </div>
-                <div className="cf">
-                  <label>Họ *</label>
-                  <input value={lastName} onChange={event => setLastName(event.target.value)} placeholder="Nhập họ" />
-                </div>
-                <div className="cf cf-full">
-                  <label>Email *</label>
-                  <input value={email} onChange={event => setEmail(event.target.value)} placeholder="example@email.com" type="email" />
-                </div>
-                <div className="cf">
-                  <label>Số điện thoại *</label>
-                  <div className="phone-wrap">
-                    <span className="phone-code">🇻🇳 +84</span>
-                    <input value={phone} onChange={event => setPhone(event.target.value)} placeholder="0123 456 789" />
+                  <div className="sfield">
+                    <label>Giờ</label>
+                    <select value={time} onChange={event => setTime(event.target.value)}>
+                      <option value="">Chọn giờ</option>
+                      {times.map(item => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-                <div className="cf cf-check">
-                  <label className="chk-label">
-                    <input type="checkbox" checked={notify} onChange={event => setNotify(event.target.checked)} />
-                    Nhận xác nhận qua tin nhắn
-                  </label>
-                </div>
-              </div>
 
-              {submitError && <p className="cancel-toast" style={{ background: "#fef2f2", color: "#b91c1c" }}>{submitError}</p>}
-
-              <div className="action-row">
-                <button className="cancel-btn" onClick={handleCancel}>Huỷ đặt bàn</button>
-                <button className="confirm-btn" onClick={handleSubmit}>
-                  Xác nhận · {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+                <button className={`find-btn ${time ? "active" : ""}`} disabled={!time || loading} onClick={handleSearch}>
+                  {loading ? (
+                    <>
+                      <span className="spinner" />
+                      Đang tìm...
+                    </>
+                  ) : (
+                    "Tìm bàn trống →"
+                  )}
                 </button>
+
+                {available === false && (
+                  <p className="no-table-msg">😔 Không còn bàn trống khung giờ này. Vui lòng chọn giờ khác.</p>
+                )}
+                {cancelled && <p className="cancel-toast">✓ Đã huỷ đặt bàn thành công.</p>}
               </div>
+
+              {available === true && (
+                <div ref={formRef} className="booking-section">
+                  <div className="bs-divider">
+                    <span>Thông tin đặt bàn</span>
+                  </div>
+
+                  <div className="bs-summary">
+                    <div className="bs-tags">
+                      <span className="bs-tag">🕐 {time}</span>
+                      <span className="bs-tag">🗓 {date.toLocaleDateString("vi-VN")}</span>
+                      <span className="bs-tag">👥 {people} người</span>
+                    </div>
+                    <div className="bs-countdown">
+                      <span className="bsc-label">Giữ bàn còn</span>
+                      <span className="bsc-time">
+                        {String(minutes).padStart(2, "0")}
+                        <em>:</em>
+                        {String(seconds).padStart(2, "0")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bs-bar">
+                    <div className="bs-bar-fill" style={{ width: `${percent}%` }} />
+                  </div>
+
+                  <div className="cust-grid">
+                    <div className="cf">
+                      <label>Tên *</label>
+                      <input value={firstName} onChange={event => setFirstName(event.target.value)} placeholder="Nhập tên" />
+                    </div>
+                    <div className="cf">
+                      <label>Họ *</label>
+                      <input value={lastName} onChange={event => setLastName(event.target.value)} placeholder="Nhập họ" />
+                    </div>
+                    <div className="cf cf-full">
+                      <label>Email *</label>
+                      <input value={email} onChange={event => setEmail(event.target.value)} placeholder="example@email.com" type="email" />
+                    </div>
+                    <div className="cf">
+                      <label>Số điện thoại *</label>
+                      <div className="phone-wrap">
+                        <span className="phone-code">🇻🇳 +84</span>
+                        <input value={phone} onChange={event => setPhone(event.target.value)} placeholder="0123 456 789" />
+                      </div>
+                    </div>
+                    <div className="cf cf-check">
+                      <label className="chk-label">
+                        <input type="checkbox" checked={notify} onChange={event => setNotify(event.target.checked)} />
+                        Nhận xác nhận qua tin nhắn
+                      </label>
+                    </div>
+                  </div>
+
+                  {submitError && (
+                    <p className="cancel-toast" style={{ background: "#fef2f2", color: "#b91c1c" }}>
+                      {submitError}
+                    </p>
+                  )}
+
+                  <div className="action-row">
+                    <button className="cancel-btn" onClick={handleCancel}>
+                      Huỷ đặt bàn
+                    </button>
+                    <button className="confirm-btn" onClick={handleSubmit}>
+                      Xác nhận · {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            <LocationCard restaurant={restaurant} />
+          </div>
         </div>
       </div>
-
-      <AddressChip restaurant={restaurant} />
 
       {success && (
         <div className="success-overlay">
