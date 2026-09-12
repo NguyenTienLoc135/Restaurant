@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 import { useAuth } from "../../context/AuthContext"
@@ -41,6 +41,8 @@ export default function Checkout() {
   const [success, setSuccess] = useState(false)
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submitLockRef = useRef(false)
 
   const deliveryFee = subtotal >= 199000 ? 0 : DELIVERY_FEE
   const total = subtotal + deliveryFee
@@ -56,6 +58,10 @@ export default function Checkout() {
   }
 
   async function handleSubmit() {
+    if (submitLockRef.current || success) {
+      return
+    }
+
     const nextErrors = validate()
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -86,6 +92,9 @@ export default function Checkout() {
       return
     }
 
+    submitLockRef.current = true
+    setIsSubmitting(true)
+
     const result = await addOrder({
       items: normalizedItems.map(item => ({
         id: item.id,
@@ -102,6 +111,8 @@ export default function Checkout() {
     })
 
     if (!result.ok) {
+      submitLockRef.current = false
+      setIsSubmitting(false)
       setSubmitError(result.message || "Không thể đặt hàng")
       return
     }
@@ -238,7 +249,9 @@ export default function Checkout() {
           <div className="co-sum-divider" />
           <div className="co-sum-total"><span>Tổng cộng</span><span>{total.toLocaleString("vi-VN")}₫</span></div>
 
-          <button className="co-submit-btn" onClick={handleSubmit}>Đặt hàng ngay 🛵</button>
+          <button className="co-submit-btn" onClick={handleSubmit} disabled={isSubmitting || success}>
+            {isSubmitting || success ? "Đang gửi đơn..." : "Đặt hàng ngay 🛵"}
+          </button>
 
           <p className="co-sum-note">
             Bằng cách đặt hàng, bạn đồng ý với <a href="#">Điều khoản dịch vụ</a> của chúng tôi.

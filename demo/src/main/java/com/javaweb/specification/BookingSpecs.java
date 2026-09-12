@@ -14,12 +14,23 @@ public class BookingSpecs {
     public static Specification<Booking> filterByDate(BookingSearchBuilder bookingSearchBuilder){
         return (root, query, cb) -> {
             List<Predicate> ps = new ArrayList<>();
+            if(bookingSearchBuilder.getUserId() != null){
+                ps.add(cb.equal(root.get("user").get("id"), bookingSearchBuilder.getUserId()));
+            }
             if(bookingSearchBuilder.getBookingDate() != null){
                 LocalDate day =  bookingSearchBuilder.getBookingDate();
                 LocalDateTime from  = day.atStartOfDay();
                 LocalDateTime to  = day.plusDays(1).atStartOfDay();
                 ps.add(cb.greaterThanOrEqualTo(root.get("bookingTime"), from));
                 ps.add(cb.lessThan(root.get("bookingTime"), to));
+            }
+            if(bookingSearchBuilder.getFromDate() != null){
+                LocalDateTime fromDate = bookingSearchBuilder.getFromDate().atStartOfDay();
+                ps.add(cb.greaterThanOrEqualTo(root.get("bookingTime"), fromDate));
+            }
+            if(bookingSearchBuilder.getToDate() != null){
+                LocalDateTime toDate = bookingSearchBuilder.getToDate().plusDays(1).atStartOfDay();
+                ps.add(cb.lessThan(root.get("bookingTime"), toDate));
             }
             return ps.isEmpty()
                     ? cb.conjunction()

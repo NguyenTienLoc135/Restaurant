@@ -1,5 +1,4 @@
 import { createContext, useContext, useState } from "react"
-import { findStaffAccountByIdentifier } from "../data/authDb"
 import { isJwtTokenExpired } from "../services/jwt"
 import { getMyInfoApi, loginUserApi, updateMyInfoApi } from "../services/authApi"
 import { getApiErrorMessage } from "../services/apiClient"
@@ -51,8 +50,8 @@ function toSafeStaff(account, fallbackRole = "staff") {
   }
 }
 
-async function fetchCurrentStaff(roleHint) {
-  const profile = await getMyInfoApi()
+async function fetchCurrentStaff(token, roleHint) {
+  const profile = await getMyInfoApi(token)
   return toSafeStaff(profile, roleHint)
 }
 
@@ -65,26 +64,7 @@ function hydrateStoredStaff() {
   }
 
   clearStaffSessionStorage()
-
-  const userShadow = loadStorage("hs_user")
-  const userShadowToken = localStorage.getItem("hs_user_token")
-  const identifier = userShadow?.username || userShadow?.email || ""
-
-  if (!userShadow?.id || !userShadowToken || isJwtTokenExpired(userShadowToken) || !identifier) {
-    return { staff: null, token: null }
-  }
-
-  const matchedStaff = findStaffAccountByIdentifier(identifier)
-  if (!matchedStaff) {
-    return { staff: null, token: null }
-  }
-
-  const hydratedStaff = toSafeStaff({ ...userShadow, role: matchedStaff.role }, matchedStaff.role)
-  clearUserSessionShadow()
-  saveStorage(STAFF_SESSION_KEY, hydratedStaff)
-  localStorage.setItem(STAFF_TOKEN_KEY, userShadowToken)
-
-  return { staff: hydratedStaff, token: userShadowToken }
+  return { staff: null, token: null }
 }
 
 export function StaffProvider({ children }) {
@@ -110,7 +90,7 @@ export function StaffProvider({ children }) {
   async function staffLogin(identifier, password) {
     try {
       const nextToken = await loginUserApi({ username: identifier.trim(), password })
-      const nextStaff = await fetchCurrentStaff("staff")
+      const nextStaff = await fetchCurrentStaff(nextToken, "staff")
       const nextRole = String(nextStaff?.role || "").trim().toLowerCase()
 
       if (nextRole !== "staff" && nextRole !== "driver") {
@@ -145,8 +125,8 @@ export function StaffProvider({ children }) {
         fullname: data.name,
         phone: data.phone,
         address: data.address,
-      })
-      const refreshed = await fetchCurrentStaff(staff.role)
+      }, token)
+      const refreshed = await fetchCurrentStaff(token, staff.role)
       const safeStaff = syncStaffSession({ ...refreshed, role: staff.role }, token)
       return { ok: true, staff: safeStaff }
     } catch (error) {

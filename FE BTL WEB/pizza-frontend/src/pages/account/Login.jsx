@@ -1,16 +1,13 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import { decodeJwtToken, isJwtTokenExpired } from "../../services/jwt"
-import { normalizeUserResponse } from "../../services/responseAdapters"
+import { isJwtTokenExpired } from "../../services/jwt"
 import { useStaff } from "../../staff/StaffContext"
 import "./Login.css"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8082"
-
 export default function Login() {
   const navigate = useNavigate()
-  const { user, login, registerUser, logout } = useAuth()
+  const { user, loginWithCredentials, registerUser, logout } = useAuth()
   const { staff, staffLogout, acceptStaffSession } = useStaff()
 
   const [mode, setMode] = useState("login")
@@ -37,7 +34,7 @@ export default function Login() {
   }
 
   if (user || (storedUserToken && !isJwtTokenExpired(storedUserToken))) {
-    return <Navigate to="/profile" replace />
+    return <Navigate to="/" replace />
   }
 
   function setField(key, value) {
@@ -74,64 +71,6 @@ export default function Login() {
     navigate(path, { replace: true })
   }
 
-  function persistUserSession(nextUser, nextToken) {
-    if (!nextToken) return
-    localStorage.setItem("hs_user_token", nextToken)
-    localStorage.setItem("hs_user", JSON.stringify(normalizeUserResponse(nextUser)))
-    localStorage.removeItem("hs_staff")
-    localStorage.removeItem("hs_staff_token")
-  }
-
-  function buildFallbackUser(identifier, token) {
-    const payload = decodeJwtToken(token) || {}
-    const username = String(payload.sub || identifier || "").trim()
-    return normalizeUserResponse({
-      id: payload.userId || payload.id || username || "pending-user",
-      username,
-      fullname: username,
-      email: "",
-      role: payload.role || payload.userRole || "CUSTOMER",
-    })
-  }
-
-  async function loginDirectly(identifier, password) {
-    const username = identifier.trim()
-
-    const loginResponse = await fetch(`${API_BASE_URL}/public/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    })
-
-    const loginText = await loginResponse.text()
-    if (!loginResponse.ok) {
-      throw new Error(loginText || "Tai khoan khong hop le.")
-    }
-
-    const nextToken = loginText.trim().replace(/^"|"$/g, "")
-    let nextUser
-
-    try {
-      const meResponse = await fetch(`${API_BASE_URL}/info/me`, {
-        headers: {
-          Authorization: `Bearer ${nextToken}`,
-        },
-      })
-
-      if (!meResponse.ok) {
-        throw new Error(await meResponse.text())
-      }
-
-      nextUser = normalizeUserResponse(await meResponse.json())
-    } catch {
-      nextUser = buildFallbackUser(username, nextToken)
-    }
-
-    return { ok: true, user: nextUser, token: nextToken }
-  }
-
   async function handleSubmit(event) {
     event.preventDefault()
     if (!validate()) return
@@ -159,15 +98,7 @@ export default function Login() {
     }
 
     staffLogout()
-    let loginResult
-    try {
-      loginResult = await loginDirectly(form.identifier, form.password)
-    } catch (error) {
-      loginResult = {
-        ok: false,
-        message: error?.message || "Tai khoan khong hop le.",
-      }
-    }
+    const loginResult = await loginWithCredentials(form.identifier, form.password)
     setLoading(false)
     if (!loginResult.ok) {
       setErrors(prev => ({
@@ -185,9 +116,7 @@ export default function Login() {
       return
     }
 
-    persistUserSession(loginResult.user, loginResult.token)
-    login(loginResult.user)
-    redirectTo("/profile")
+    redirectTo("/")
   }
 
   return (

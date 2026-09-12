@@ -37,6 +37,8 @@ public class SearchBuilderConverter {
         BookingSearchBuilder.Builder builder = new BookingSearchBuilder.Builder();
         builder.setUserId(MapUtil.getObject(params, "userId", Integer.class));
         builder.setBookingDate(MapUtil.getObject(params, "bookingDate", LocalDate.class));
+        builder.setFromDate(MapUtil.getObject(params, "fromDate", LocalDate.class));
+        builder.setToDate(MapUtil.getObject(params, "toDate", LocalDate.class));
         return builder.build();
    }
 }

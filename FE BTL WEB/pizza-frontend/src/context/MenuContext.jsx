@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useState } from "react"
-import { INITIAL_MENU_ITEMS, MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
+import { MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
 import {
   createStaffItemApi,
   deleteStaffItemApi,
@@ -15,9 +15,9 @@ const MenuContext = createContext(null)
 function loadMenuFallback() {
   try {
     const saved = localStorage.getItem("hs_menu")
-    return saved ? JSON.parse(saved) : INITIAL_MENU_ITEMS
+    return saved ? JSON.parse(saved) : []
   } catch {
-    return INITIAL_MENU_ITEMS
+    return []
   }
 }
 
@@ -83,11 +83,9 @@ export function MenuProvider({ children }) {
         setLoading(true)
         const apiItems = await fetchPublicItemsApi()
         const normalized = normalizeMenuList(apiItems)
-        if (normalized.length) {
-          setItems(normalized)
-          saveMenuFallback(normalized)
-          setIsBackendSynced(true)
-        }
+        setItems(normalized)
+        saveMenuFallback(normalized)
+        setIsBackendSynced(true)
         setError("")
       } catch (apiError) {
         setItems(loadMenuFallback())
@@ -104,11 +102,9 @@ export function MenuProvider({ children }) {
   async function refreshFromStaffApi() {
     const apiItems = await fetchStaffItemsApi()
     const normalized = normalizeMenuList(apiItems)
-    if (normalized.length) {
-      setItems(normalized)
-      saveMenuFallback(normalized)
-      setIsBackendSynced(true)
-    }
+    setItems(normalized)
+    saveMenuFallback(normalized)
+    setIsBackendSynced(true)
     return normalized
   }
 
@@ -156,11 +152,9 @@ export function MenuProvider({ children }) {
       refreshItems: async builder => {
         const apiItems = await fetchPublicItemsApi(builder)
         const normalized = normalizeMenuList(apiItems)
-        if (normalized.length) {
-          setItems(normalized)
-          saveMenuFallback(normalized)
-          setIsBackendSynced(true)
-        }
+        setItems(normalized)
+        saveMenuFallback(normalized)
+        setIsBackendSynced(true)
         return normalized
       },
       createItem,

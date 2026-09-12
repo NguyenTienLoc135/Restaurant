@@ -2,12 +2,27 @@ import axios from "axios"
 
 const DEFAULT_API_BASE_URL = "http://localhost:8082"
 
-function getStoredToken() {
-  return (
-    localStorage.getItem("hs_user_token") ||
-    localStorage.getItem("hs_staff_token") ||
-    ""
-  )
+function isStaffRoute() {
+  if (typeof window === "undefined") return false
+  return window.location.pathname.startsWith("/staff")
+}
+
+function getStoredToken(requestUrl = "") {
+  const userToken = localStorage.getItem("hs_user_token") || ""
+  const staffToken = localStorage.getItem("hs_staff_token") || ""
+  const normalizedUrl = String(requestUrl || "")
+  const prefersStaffToken =
+    isStaffRoute() ||
+    normalizedUrl.startsWith("/staff") ||
+    normalizedUrl.startsWith("/delivery") ||
+    normalizedUrl === "/orders/" ||
+    /^\/orders\/\d+$/.test(normalizedUrl)
+
+  if (prefersStaffToken) {
+    return staffToken || userToken || ""
+  }
+
+  return userToken || staffToken || ""
 }
 
 export const apiClient = axios.create({
@@ -18,8 +33,13 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use(config => {
-  const token = getStoredToken()
-  if (token) {
+  const existingAuthorization = config.headers?.Authorization || config.headers?.authorization
+  if (existingAuthorization) {
+    return config
+  }
+
+  const token = getStoredToken(config.url)
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config

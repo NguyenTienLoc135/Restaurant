@@ -386,6 +386,13 @@
   box-shadow: 0 8px 24px rgba(15,32,68,0.28);
 }
 
+.co-submit-btn:disabled {
+  background: #8f98ab;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .co-sum-note {
   font-size: 12px;
   color: #9ca3af;

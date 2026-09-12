@@ -75,12 +75,7 @@ const ORDER_STATUS_CODE_BY_LABEL = {
 
 const BOOKING_STATUS_MAP = {
   PENDING: "Chờ xác nhận",
-  BOOKED: "Bàn đã đặt",
   ACCEPTED: "Bàn đã đặt",
-  CONFIRMED: "Bàn đã đặt",
-  ARRIVED: "Khách đã đến",
-  OPEN: "Bàn còn trống",
-  AVAILABLE: "Bàn còn trống",
   CANCELLED: "Đã hủy",
 }
 
@@ -119,10 +114,10 @@ export function mapOrderStatusToApi(status) {
     "Chờ xác nhận": "PENDING",
     "Đang chuẩn bị": "ACCEPTED",
     "Đã giao cho shipper": "DELIVERY",
-    "Đang giao hàng": "DELIVERING",
+    "Đang giao hàng": "DELIVERY",
     "Đã hoàn thành": "COMPLETED",
     "Đã hủy": "CANCELLED",
-    "Khách không nhận món": "CANCELLED",
+    "Khách không nhận món": "INCOMPLETE",
   }
   return map[status] || status
 }
@@ -131,8 +126,6 @@ export function mapBookingStatusToApi(status) {
   const map = {
     "Chờ xác nhận": "PENDING",
     "Bàn đã đặt": "ACCEPTED",
-    "Khách đã đến": "ACCEPTED",
-    "Bàn còn trống": "PENDING",
     "Đã hủy": "CANCELLED",
   }
   return map[status] || status
@@ -146,20 +139,25 @@ export function normalizeUserResponse(user) {
   if (!user) return null
 
   const name = firstValue(user.name, user.fullname, user.username, "Khach hang")
-  const email = firstValue(user.email, user.username)
+  const email = firstValue(user.email)
   const joinedDate = normalizeDateValue(firstValue(user.joinedAt, user.createdAt, user.joined))
+  const userRole = String(firstValue(user.userRole, user.role, "CUSTOMER")).trim().toUpperCase() || "CUSTOMER"
+  const userIsActive = String(firstValue(user.userIsActive, user.isActive, "ACTIVE")).trim().toUpperCase() || "ACTIVE"
 
   return {
     ...user,
     id: user.id ?? null,
     name,
     fullname: firstValue(user.fullname, name),
-    username: firstValue(user.username, email, name),
+    username: firstValue(user.username, name),
     email,
     phone: firstValue(user.phone),
     address: firstValue(user.address),
-    role: firstValue(user.role, user.userRole, "user"),
-    isActive: firstValue(user.isActive, user.userIsActive, "ACTIVE"),
+    role: firstValue(user.role, user.userRole, "customer"),
+    userRole,
+    isActive: userIsActive,
+    userIsActive,
+    status: userIsActive,
     joined: typeof user.joined === "string" && user.joined ? user.joined : formatDate(joinedDate),
     avatar: firstValue(user.avatar, name.charAt(0).toUpperCase()),
   }
@@ -192,10 +190,19 @@ export function normalizeOrderResponse(order) {
   const createdAt = normalizeDateValue(
     firstValue(order.createdAt, order.orderTime, order.dateTime, order.deliveryTime)
   )
-  const statusCode = String(
+  const rawStatusCode = String(
     firstValue(order.statusCode, ORDER_STATUS_CODE_BY_LABEL[order.status], order.status, "")
   ).toUpperCase()
-  const normalizedStatus = ORDER_STATUS_MAP[statusCode] || firstValue(order.status, "Chờ xác nhận")
+  const driverName = firstValue(order.driverName)
+  const driverPhone = firstValue(order.driverPhone)
+  const statusCode =
+    rawStatusCode === "DELIVERY" && driverName
+      ? "DELIVERING"
+      : rawStatusCode
+  const normalizedStatus =
+    statusCode === "DELIVERING"
+      ? "Đang giao hàng"
+      : ORDER_STATUS_MAP[statusCode] || firstValue(order.status, "Chờ xác nhận")
   const normalizedId =
     typeof order.id === "string" && order.id.startsWith("#") ? order.id : normalizeId(order.id, "#4P")
 
@@ -203,7 +210,7 @@ export function normalizeOrderResponse(order) {
     ...order,
     id: normalizedId,
     date: order.date || formatDate(createdAt),
-    createdAt: firstValue(order.createdAt, createdAt?.toISOString(), new Date().toISOString()),
+    createdAt: firstValue(order.createdAt, createdAt?.toISOString(), ""),
     customer: firstValue(order.customer, order.name, order.fullname, order.username, "Khách online"),
     customerEmail: firstValue(order.customerEmail, order.email),
     phone: firstValue(order.phone, order.userPhone),
@@ -215,8 +222,8 @@ export function normalizeOrderResponse(order) {
     notes: firstValue(order.notes, order.note),
     deliveryTime: firstValue(order.deliveryTime, createdAt ? formatTime(createdAt) : ""),
     userId: firstValue(order.userId, order.customerId, null),
-    driverName: firstValue(order.driverName),
-    driverPhone: firstValue(order.driverPhone),
+    driverName,
+    driverPhone,
   }
 }
 
@@ -224,6 +231,7 @@ export function normalizeBookingResponse(booking) {
   if (!booking) return null
 
   const bookingDate = normalizeDateValue(firstValue(booking.bookingTime, booking.createdAt))
+  const rawStatusCode = String(firstValue(booking.statusCode, booking.status, "")).toUpperCase()
   const normalizedStatus =
     BOOKING_STATUS_MAP[String(orderOrBookingStatus(booking.status)).toUpperCase()] ||
     firstValue(booking.status, "Chờ xác nhận")
@@ -235,13 +243,15 @@ export function normalizeBookingResponse(booking) {
     id: normalizedId,
     date: firstValue(booking.date, formatDate(bookingDate)),
     time: firstValue(booking.time, formatTime(bookingDate)),
-    createdAt: firstValue(booking.createdAt, bookingDate?.toISOString(), new Date().toISOString()),
+    createdAt: firstValue(booking.createdAt, ""),
+    bookingDateTime: firstValue(booking.bookingTime, booking.createdAt, bookingDate?.toISOString(), ""),
     guests: Number(firstValue(booking.guests, booking.guestNumber, 1)) || 1,
+    statusCode: rawStatusCode,
     status: normalizedStatus,
     name: firstValue(booking.name, booking.fullname, booking.username, "Khách"),
     phone: firstValue(booking.phone),
     email: firstValue(booking.email),
-    table: firstValue(booking.table, "TBD"),
+    table: firstValue(booking.table),
     userId: firstValue(booking.userId, booking.customerId, null),
   }
 }
@@ -264,6 +274,7 @@ export function normalizeMenuItemResponse(item) {
     catLabel: MENU_CATEGORY_LABEL[cat] || cat,
     name,
     desc: firstValue(item.desc, item.description),
+    unit: firstValue(item.unit, ""),
     price: Number(item.price) || 0,
     img: firstValue(item.img, "https://via.placeholder.com/500x320?text=No+Image"),
     badge: firstValue(item.badge, apiCategory === "DESSERTS" ? "Mới" : null),

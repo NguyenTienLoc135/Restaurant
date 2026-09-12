@@ -8,11 +8,8 @@ const BLANK = {
   name: "",
   desc: "",
   price: "",
+  unit: "",
   img: "",
-  badge: "",
-  origin: "",
-  ingredients: "",
-  story: "",
   status: MENU_STATUS.available,
   imagePublicId: "",
 }
@@ -45,7 +42,7 @@ export default function StaffMenuManager() {
   function openEdit(item) {
     setForm({
       ...item,
-      badge: item.badge || "",
+      unit: item.unit || "",
       imagePublicId: item.imagePublicId || "",
     })
     setUploadError("")
@@ -76,7 +73,7 @@ export default function StaffMenuManager() {
 
     const payload = {
       ...form,
-      badge: form.badge.trim() || null,
+      unit: form.unit?.trim() || "",
     }
 
     try {
@@ -233,17 +230,17 @@ export default function StaffMenuManager() {
               </div>
 
               <div className="sm-field">
-                <label>Mô tả ngắn</label>
-                <input value={form.desc} onChange={event => setField("desc", event.target.value)} />
+                <label>Đơn vị</label>
+                <input
+                  value={form.unit}
+                  onChange={event => setField("unit", event.target.value)}
+                  placeholder="Phần / Suất / Ly..."
+                />
               </div>
 
               <div className="sm-field">
-                <label>Badge</label>
-                <input
-                  placeholder="Bán chạy / Signature / Mới"
-                  value={form.badge}
-                  onChange={event => setField("badge", event.target.value)}
-                />
+                <label>Mô tả ngắn</label>
+                <input value={form.desc} onChange={event => setField("desc", event.target.value)} />
               </div>
 
               <div className="sm-field">
@@ -282,21 +279,6 @@ export default function StaffMenuManager() {
                   </div>
                 </div>
               )}
-
-              <div className="sm-field">
-                <label>Nguồn gốc</label>
-                <input value={form.origin} onChange={event => setField("origin", event.target.value)} />
-              </div>
-
-              <div className="sm-field">
-                <label>Nguyên liệu</label>
-                <input value={form.ingredients} onChange={event => setField("ingredients", event.target.value)} />
-              </div>
-
-              <div className="sm-field">
-                <label>Câu chuyện món ăn</label>
-                <textarea value={form.story} onChange={event => setField("story", event.target.value)} rows={4} />
-              </div>
             </div>
 
             <div className="sm-modal-footer">
