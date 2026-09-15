@@ -16,6 +16,7 @@ import {
 import { getApiErrorMessage } from "../services/apiClient"
 import { cancelMyOrderApi, createOrderApi, getMyOrdersApi, getOrderDetailsApi } from "../services/orderApi"
 import { createBookingApi, getMyBookingsApi } from "../services/bookingApi"
+import { loadBookings, loadOrders } from "../data/staffData"
 
 const AuthContext = createContext(null)
 const USER_SESSION_KEY = "hs_user"
@@ -54,14 +55,18 @@ function toSafeUser(account) {
 
 function buildFallbackUser(identifier, token) {
   const payload = decodeJwtToken(token) || {}
-  const username = String(payload.sub || identifier || "").trim()
+  const username = String(identifier || "").trim()
   return toSafeUser({
-    id: payload.userId || payload.id || username || "pending-user",
+    id: payload.userId || payload.id || payload.sub || username || "pending-user",
     username,
     fullname: username,
     email: "",
     role: "customer",
   })
+}
+
+function getAccountRole(account) {
+  return String(account?.userRole || account?.role || "").trim().toUpperCase()
 }
 
 async function fetchCurrentUser(token) {
@@ -107,13 +112,7 @@ function hydrateStoredUser() {
     }
   }
 
-  const fallbackUser = buildFallbackUser("", token)
-  saveStorage(USER_SESSION_KEY, fallbackUser)
-
-  return {
-    user: fallbackUser,
-    token,
-  }
+  return { user: null, token }
 }
 
 export function AuthProvider({ children }) {
@@ -142,8 +141,8 @@ export function AuthProvider({ children }) {
       try {
         const [nextUser, nextOrders, nextBookings] = await Promise.all([
           fetchCurrentUser(token),
-          fetchOrderHistory(token).catch(() => []),
-          fetchBookingHistory(token).catch(() => []),
+          fetchOrderHistory(token).catch(() => normalizeOrderList(loadOrders())),
+          fetchBookingHistory(token).catch(() => normalizeBookingList(loadBookings())),
         ])
         setSession({ user: nextUser, token })
         saveStorage(USER_SESSION_KEY, nextUser)
@@ -179,7 +178,7 @@ export function AuthProvider({ children }) {
         setOrders(nextOrders)
       } catch {
         if (!active) return
-        setOrders([])
+        setOrders(normalizeOrderList(loadOrders()))
       } finally {
         if (!active) return
         setLoadingOrders(false)
@@ -191,7 +190,7 @@ export function AuthProvider({ children }) {
         setBookings(nextBookings)
       } catch {
         if (!active) return
-        setBookings([])
+        setBookings(normalizeBookingList(loadBookings()))
       } finally {
         if (!active) return
         setLoadingBookings(false)
@@ -220,12 +219,7 @@ export function AuthProvider({ children }) {
       const nextToken = await loginUserApi({ username, password })
       localStorage.setItem(USER_TOKEN_KEY, nextToken)
 
-      let nextUser
-      try {
-        nextUser = await fetchCurrentUser(nextToken)
-      } catch {
-        nextUser = buildFallbackUser(username, nextToken)
-      }
+      const nextUser = await fetchCurrentUser(nextToken)
       setSession({ user: nextUser, token: nextToken })
       saveStorage(USER_SESSION_KEY, nextUser)
       return { ok: true, user: nextUser, token: nextToken }

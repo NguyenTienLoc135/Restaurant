@@ -10,14 +10,16 @@ import com.javaweb.repository.UserRepository;
 import com.javaweb.security.CurrentUserProvider;
 import com.javaweb.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 @Service
@@ -25,52 +27,32 @@ import java.util.List;
 public class DeliveryServiceImpl implements DeliveryService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
     private final CurrentUserProvider currentUserProvider;
 
-    private Integer getAuthenticatedDriverId() {
+    // chuyen du lieu Order entity ve response de FE driver de render
+    private OrderResponse orderResponseFilter(Order order) {
+        User customer = order.getCustomer();
+        User driver = order.getDriver();
+        OrderResponse orderResponse = new OrderResponse();
+        orderResponse.setId(order.getId());
+        orderResponse.setUsername(customer != null ? customer.getUsername() : null);
+        orderResponse.setDriverName(driver != null ? driver.getUsername() : null);
+        orderResponse.setUserPhone(customer != null ? customer.getPhone() : null);
+        orderResponse.setDriverPhone(driver != null ? driver.getPhone() : null);
+        orderResponse.setAddress(order.getAddress());
+        orderResponse.setDeliveryFee(order.getDeliveryFee());
+        orderResponse.setItemsTotal(order.getItemsTotal());
+        orderResponse.setTotalPrice(order.getItemsTotal());
+        orderResponse.setStatus(order.getStatus());
+        return orderResponse;
+    }
+
+    // lay id cua tai xe dang dang nhap tu token hien tai
+    private Integer getCurrentDriverId() {
         return currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
     }
-
-    private OrderResponse toOrderResponse(Order order) {
-        OrderResponse response = new OrderResponse();
-        User customer = order.getCustomer();
-        User driver = order.getDriver();
-        response.setId(order.getId());
-        response.setCustomerId(customer != null ? customer.getId() : null);
-        response.setUsername(customer != null ? customer.getUsername() : null);
-        response.setUserPhone(customer != null ? customer.getPhone() : null);
-        response.setDriverName(driver != null ? driver.getUsername() : null);
-        response.setDriverPhone(driver != null ? driver.getPhone() : null);
-        response.setOrderTime(order.getOrderTime());
-        response.setAddress(order.getAddress());
-        response.setNote(order.getNote());
-        response.setItemsTotal(order.getItemsTotal());
-        response.setDeliveryFee(order.getDeliveryFee());
-        response.setStatus(order.getStatus());
-        BigDecimal itemsTotal = order.getItemsTotal();
-        BigDecimal deliveryFee = order.getDeliveryFee();
-        if (itemsTotal != null && deliveryFee != null) {
-            response.setTotalPrice(itemsTotal.add(deliveryFee));
-        } else {
-            response.setTotalPrice(itemsTotal != null ? itemsTotal : deliveryFee);
-        }
-        return response;
-    }
-
-    private List<OrderResponse> findDriverOrdersByStatus(Integer driverId, OrderStatus status) {
-        List<Order> orders = orderRepository.findAll();
-        List<OrderResponse> results = new ArrayList<>();
-        for (Order order : orders) {
-            if (status.equals(order.getStatus())
-                    && order.getDriver() != null
-                    && driverId.equals(order.getDriver().getId())) {
-                results.add(toOrderResponse(order));
-            }
-        }
-        return results;
-    }
-
 
     @Transactional
     @Override
@@ -78,9 +60,50 @@ public class DeliveryServiceImpl implements DeliveryService {
     public List<OrderResponse> getDeliveryOrders() {
         List<Order> orders = orderRepository.findAll();
         List<OrderResponse> results = new ArrayList<>();
+        LocalDate today = LocalDate.now();
         for (Order order : orders) {
-            if (OrderStatus.DELIVERY.equals(order.getStatus())) {
-                results.add(toOrderResponse(order));
+            // chi lay don dang o trang thai cho shipper nhan va tao trong ngay
+            if (OrderStatus.DELIVERY.equals(order.getStatus())
+                    && order.getOrderTime() != null
+                    && order.getOrderTime().toLocalDate().equals(today)) {
+                results.add(orderResponseFilter(order));
+            }
+        }
+        return results;
+    }
+
+    @Transactional
+    @Override
+    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    public List<OrderResponse> DeliveryingOrders() {
+        Integer userId = getCurrentDriverId();
+        List<Order> orders = orderRepository.findAll();
+        List<OrderResponse> results = new ArrayList<>();
+        for (Order order : orders) {
+            // chi lay cac don dang giao cua dung tai xe hien tai
+            if (OrderStatus.DELIVERING.equals(order.getStatus())
+                    && order.getDriver() != null
+                    && userId.equals(order.getDriver().getId())) {
+                results.add(orderResponseFilter(order));
+            }
+        }
+        return results;
+    }
+
+    @Transactional
+    @Override
+    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    public List<OrderResponse> DeliveriedOrders() {
+        Integer userId = getCurrentDriverId();
+        List<Order> orders = orderRepository.findAll();
+        List<OrderResponse> results = new ArrayList<>();
+        // lich su giao hang gom don giao thanh cong, khach khong nhan va don bi huy
+        var historyStatuses = EnumSet.of(OrderStatus.COMPLETED, OrderStatus.INCOMPLETE, OrderStatus.CANCELLED);
+        for (Order order : orders) {
+            if (historyStatuses.contains(order.getStatus())
+                    && order.getDriver() != null
+                    && userId.equals(order.getDriver().getId())) {
+                results.add(orderResponseFilter(order));
             }
         }
         return results;
@@ -89,70 +112,50 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_DRIVER')")
-    public List<OrderResponse> DeliveriedOrders() {
-        Integer userId = getAuthenticatedDriverId();
-        List<OrderResponse> completed = findDriverOrdersByStatus(userId, OrderStatus.COMPLETED);
-        completed.addAll(findDriverOrdersByStatus(userId, OrderStatus.CANCELLED));
-        completed.addAll(findDriverOrdersByStatus(userId, OrderStatus.INCOMPLETE));
-        return completed;
-    }
+    public String claimOrder(Integer orderId) {
+        Integer userId = getCurrentDriverId();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new DataNotFoundException("Order not found"));
+        User driver = userRepository.findById(userId)
+                .orElseThrow(() -> new DataNotFoundException("Driver not found"));
 
-    @Override
-    @Transactional
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
-    public List<OrderResponse> DeliveryingOrders() {
-        Integer userId = getAuthenticatedDriverId();
-        return findDriverOrdersByStatus(userId, OrderStatus.DELIVERING);
+        // chi nhan duoc don dang o trang thai DELIVERY
+        if (!OrderStatus.DELIVERY.equals(order.getStatus())) {
+            throw new IllegalStateException("Order cannot be claimed");
+        }
+
+        // gan tai xe hien tai vao don va chuyen sang dang giao
+        order.setDriver(driver);
+        order.setStatus(OrderStatus.DELIVERING);
+        orderRepository.save(order);
+        return "claim success";
     }
 
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_DRIVER')")
     public String DeliveryUpdate(Integer orderId, OrderStatus status) {
-        Integer userId = getAuthenticatedDriverId();
+        Integer userId = getCurrentDriverId();
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new DataNotFoundException("Order not found"));
 
-        if (!OrderStatus.DELIVERING.equals(order.getStatus())) {
-            throw new IllegalStateException("Only delivering orders can be updated");
-        }
-
+        // tai xe chi duoc cap nhat don cua chinh minh
         if (order.getDriver() == null || !userId.equals(order.getDriver().getId())) {
             throw new AccessDeniedException("Forbidden");
         }
 
-        if (!OrderStatus.COMPLETED.equals(status)
-                && !OrderStatus.CANCELLED.equals(status)
-                && !OrderStatus.INCOMPLETE.equals(status)) {
-            throw new IllegalArgumentException("Status must be COMPLETED, CANCELLED or INCOMPLETE");
+        // chi cho cap nhat ket qua khi don dang o trang thai DELIVERING
+        if (!OrderStatus.DELIVERING.equals(order.getStatus())) {
+            throw new IllegalStateException("Order is not delivering");
         }
 
-        if (OrderStatus.INCOMPLETE.equals(status)) {
-            status = OrderStatus.CANCELLED;
+        // tai xe chi duoc chot 2 ket qua cuoi cung: thanh cong hoac khach khong nhan
+        if (status != OrderStatus.COMPLETED && status != OrderStatus.INCOMPLETE) {
+            throw new IllegalArgumentException("Driver can only update to COMPLETED or INCOMPLETE");
         }
 
         order.setStatus(status);
         orderRepository.save(order);
-        return "delivery update success";
-    }
-
-    @Override
-    @Transactional
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
-    public String claimOrder(Integer orderId) {
-        Integer userId = getAuthenticatedDriverId();
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new DataNotFoundException("Order not found"));
-        User driver = userRepository.findById(userId)
-                .orElseThrow(() -> new DataNotFoundException("Driver not found"));
-
-        if (!OrderStatus.DELIVERY.equals(order.getStatus())) {
-            throw new IllegalStateException("Order cannot be claimed");
-        }
-        order.setDriver(driver);
-        order.setStatus(OrderStatus.DELIVERING);
-        orderRepository.save(order);
-        return "claim success";
+        return "update success";
     }
 }
-

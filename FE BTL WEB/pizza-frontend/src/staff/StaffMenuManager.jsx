@@ -8,10 +8,8 @@ const BLANK = {
   name: "",
   desc: "",
   price: "",
-  unit: "",
   img: "",
   status: MENU_STATUS.available,
-  imagePublicId: "",
 }
 
 export default function StaffMenuManager() {
@@ -41,9 +39,13 @@ export default function StaffMenuManager() {
 
   function openEdit(item) {
     setForm({
-      ...item,
-      unit: item.unit || "",
-      imagePublicId: item.imagePublicId || "",
+      id: item.id,
+      cat: item.cat,
+      name: item.name || "",
+      desc: item.desc || "",
+      price: item.price ?? "",
+      img: item.img || "",
+      status: item.status || MENU_STATUS.available,
     })
     setUploadError("")
     setUploadNotice("")
@@ -71,10 +73,7 @@ export default function StaffMenuManager() {
       return
     }
 
-    const payload = {
-      ...form,
-      unit: form.unit?.trim() || "",
-    }
+    const payload = { ...form }
 
     try {
       if (modal === "add") await createItem(payload)
@@ -98,7 +97,6 @@ export default function StaffMenuManager() {
       setForm(prev => ({
         ...prev,
         img: uploaded.url,
-        imagePublicId: uploaded.publicId,
       }))
 
       if (uploaded.provider === "cloudinary") {
@@ -124,7 +122,7 @@ export default function StaffMenuManager() {
       <div className="sm-header">
         <div>
           <h2 className="sm-title">Quản lý Menu</h2>
-          <p className="sm-sub">Thêm, sửa, xóa món ăn và đồng bộ ngay sang web user</p>
+          <p className="sm-sub">Form quản lý này đã được thu gọn theo đúng các field menu mà backend hiện đang hỗ trợ.</p>
         </div>
         <button className="sm-btn" onClick={openAdd}>+ Thêm món mới</button>
       </div>
@@ -230,15 +228,6 @@ export default function StaffMenuManager() {
               </div>
 
               <div className="sm-field">
-                <label>Đơn vị</label>
-                <input
-                  value={form.unit}
-                  onChange={event => setField("unit", event.target.value)}
-                  placeholder="Phần / Suất / Ly..."
-                />
-              </div>
-
-              <div className="sm-field">
                 <label>Mô tả ngắn</label>
                 <input value={form.desc} onChange={event => setField("desc", event.target.value)} />
               </div>
@@ -264,11 +253,6 @@ export default function StaffMenuManager() {
                 {uploadNotice && <p style={{ marginTop: 8, color: "#166534", lineHeight: 1.6 }}>{uploadNotice}</p>}
                 {uploadError && <p style={{ marginTop: 8, color: "#b91c1c" }}>{uploadError}</p>}
                 {submitError && <p style={{ marginTop: 8, color: "#b91c1c" }}>{submitError}</p>}
-                {form.imagePublicId && (
-                  <p style={{ marginTop: 8, color: "#6b7280", wordBreak: "break-all" }}>
-                    Cloudinary public_id: {form.imagePublicId}
-                  </p>
-                )}
               </div>
 
               {form.img && (

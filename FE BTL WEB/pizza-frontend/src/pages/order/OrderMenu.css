@@ -83,9 +83,16 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 20px var(--om-inline) 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.2%, 18px);
 }
 
-.om-search-box { position: relative; }
+.om-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
 
 .om-search-wrap {
   display: flex; align-items: center; gap: 10px;
@@ -119,6 +126,44 @@
   transition: all 0.15s; flex-shrink: 0;
 }
 .om-search-clear:hover { background: #e5e7eb; color: var(--navy); }
+
+.om-search-submit {
+  background: var(--navy);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.om-search-submit:hover { background: var(--blue); transform: translateY(-1px); }
+
+.om-reset-btn {
+  background: rgba(255,255,255,0.86);
+  border: 1.5px solid rgba(15,32,68,0.12);
+  border-radius: 14px;
+  width: clamp(46px, 3.6vw, 56px);
+  height: clamp(46px, 3.6vw, 56px);
+  font-size: clamp(18px, 1.35vw, 24px);
+  color: var(--navy);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.om-reset-btn:hover {
+  background: white;
+  border-color: var(--navy);
+  transform: rotate(-90deg);
+}
 
 /* suggestion dropdown */
 .om-suggest-dropdown {
@@ -198,6 +243,16 @@
   padding: 12px var(--om-inline) 16px;
   display: flex; align-items: center; gap: 8px;
   border-top: 1px solid rgba(15,32,68,0.06);
+}
+
+.om-filter-hint {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--om-inline) 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .om-sort-label {
@@ -334,6 +389,8 @@
   .om-cart-btn     { display: none; }
   .om-header-inner { padding: 24px var(--om-inline) 0; }
   .om-search-row   { padding: 14px var(--om-inline) 0; }
+  .om-search-submit { padding: 8px 14px; font-size: 11px; }
+  .om-reset-btn { width: 46px; height: 46px; font-size: 20px; border-radius: 12px; }
   .om-tabs         { padding: 0 var(--om-inline); }
   .om-sort-bar     { padding: 10px var(--om-inline) 12px; flex-wrap: wrap; }
   .om-grid-wrap    { padding: 32px var(--om-inline) 120px; }

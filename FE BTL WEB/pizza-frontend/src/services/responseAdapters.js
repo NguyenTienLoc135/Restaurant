@@ -274,7 +274,6 @@ export function normalizeMenuItemResponse(item) {
     catLabel: MENU_CATEGORY_LABEL[cat] || cat,
     name,
     desc: firstValue(item.desc, item.description),
-    unit: firstValue(item.unit, ""),
     price: Number(item.price) || 0,
     img: firstValue(item.img, "https://via.placeholder.com/500x320?text=No+Image"),
     badge: firstValue(item.badge, apiCategory === "DESSERTS" ? "Mới" : null),

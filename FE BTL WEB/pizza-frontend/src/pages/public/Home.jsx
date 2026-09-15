@@ -22,17 +22,17 @@ function useInView(threshold = 0.15) {
 ───────────────────────────────────────── */
 const NEWS = [
   {
-    date: "2025.5.29",
+    date: "14.4.2026",
     title: "MAKE THE WORLD SMILE FOR CHEESE 🧀",
-    img: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a318?w=400&q=80"
+    img: "https://res.cloudinary.com/dhtcwawcw/image/upload/v1775661809/hdupic8oaacvexjcmxpq.jpg"
   },
   {
-    date: "2025.5.17",
+    date: "14.4.2026",
     title: "PRESERVING NATURE'S PUREST GIFT…",
     img: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&q=80"
   },
   {
-    date: "2025.4.25",
+    date: "14.4.2026",
     title: "2024 SUSTAINABILITY REPORT LAUNCH…",
     img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80"
   }
@@ -170,7 +170,6 @@ export default function Home() {
 
         {/* SECTION NAV TABS */}
         <div className="section-tabs">
-          <button className="stab active" onClick={() => navigate("/about")}>Location</button>
           <button className="stab" onClick={() => navigate("/menu")}>Menu</button>
           <button className="stab">News</button>
         </div>
@@ -229,10 +228,10 @@ export default function Home() {
 
           {/* Links */}
           <nav className="footer-nav">
-            <a href="#">Company Profile</a>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Career</a>
-            <a href="#">E-Invoice</a>
+            <a href="#">Profile công ty</a>
+            <a href="#">Chính sách quyền riêng tư</a>
+            <a href="#">Tuyển dụng</a>
+            <a href="#">Hóa đơn điện tử</a>
           </nav>
 
           {/* Social */}

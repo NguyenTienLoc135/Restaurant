@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useState } from "react"
-import { MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
+import { INITIAL_MENU_ITEMS, MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
 import {
   createStaffItemApi,
   deleteStaffItemApi,
@@ -15,9 +15,9 @@ const MenuContext = createContext(null)
 function loadMenuFallback() {
   try {
     const saved = localStorage.getItem("hs_menu")
-    return saved ? JSON.parse(saved) : []
+    return saved ? JSON.parse(saved) : INITIAL_MENU_ITEMS
   } catch {
-    return []
+    return INITIAL_MENU_ITEMS
   }
 }
 

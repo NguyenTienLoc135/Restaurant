@@ -1,13 +1,17 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import { isJwtTokenExpired } from "../../services/jwt"
+import { findStaffAccountByIdentifier } from "../../data/authDb"
+import { decodeJwtToken, isJwtTokenExpired } from "../../services/jwt"
+import { normalizeUserResponse } from "../../services/responseAdapters"
 import { useStaff } from "../../staff/StaffContext"
 import "./Login.css"
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8082"
+
 export default function Login() {
   const navigate = useNavigate()
-  const { user, loginWithCredentials, registerUser, logout } = useAuth()
+  const { user, login, registerUser, logout } = useAuth()
   const { staff, staffLogout, acceptStaffSession } = useStaff()
 
   const [mode, setMode] = useState("login")
@@ -71,6 +75,106 @@ export default function Login() {
     navigate(path, { replace: true })
   }
 
+  function clearAllSessions() {
+    localStorage.removeItem("hs_user")
+    localStorage.removeItem("hs_user_token")
+    localStorage.removeItem("hs_staff")
+    localStorage.removeItem("hs_staff_token")
+  }
+
+  function persistUserSession(nextUser, nextToken) {
+    if (!nextToken) return
+    localStorage.setItem("hs_user_token", nextToken)
+    localStorage.setItem("hs_user", JSON.stringify(normalizeUserResponse(nextUser)))
+    localStorage.removeItem("hs_staff")
+    localStorage.removeItem("hs_staff_token")
+  }
+
+function buildFallbackUser(identifier, token) {
+  const payload = decodeJwtToken(token) || {}
+  const username = String(payload.sub || identifier || "").trim()
+  return normalizeUserResponse({
+      id: payload.userId || payload.id || username || "pending-user",
+      username,
+      fullname: username,
+      email: "",
+    role: payload.role || payload.userRole || "CUSTOMER",
+  })
+}
+
+function buildAuthHeaders(token) {
+  return {
+    Authorization: `Bearer ${token}`,
+  }
+}
+
+async function canAccess(url, token) {
+  try {
+    const response = await fetch(url, {
+      headers: buildAuthHeaders(token),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+async function inferRoleAfterLogin(identifier, token) {
+  if (await canAccess(`${API_BASE_URL}/staff/users`, token)) {
+    return "staff"
+  }
+
+  if (await canAccess(`${API_BASE_URL}/delivery`, token)) {
+    return "driver"
+  }
+
+  const matchedStaffAccount = findStaffAccountByIdentifier(identifier)
+  if (matchedStaffAccount?.role === "staff" || matchedStaffAccount?.role === "driver") {
+    return matchedStaffAccount.role
+  }
+
+  return "customer"
+}
+
+  async function loginDirectly(identifier, password) {
+    const username = identifier.trim()
+
+    const loginResponse = await fetch(`${API_BASE_URL}/public/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    })
+
+    const loginText = await loginResponse.text()
+    if (!loginResponse.ok) {
+      throw new Error(loginText || "Tai khoan khong hop le.")
+    }
+
+    const nextToken = loginText.trim().replace(/^"|"$/g, "")
+    const meResponse = await fetch(`${API_BASE_URL}/info/me`, {
+      headers: buildAuthHeaders(nextToken),
+    })
+
+    if (!meResponse.ok) {
+      throw new Error("Khong the lay thong tin tai khoan sau khi dang nhap.")
+    }
+
+    const nextUser = normalizeUserResponse(await meResponse.json())
+    const inferredRole = await inferRoleAfterLogin(username, nextToken)
+
+    return {
+      ok: true,
+      user: normalizeUserResponse({
+        ...nextUser,
+        role: inferredRole,
+        userRole: inferredRole.toUpperCase(),
+      }),
+      token: nextToken,
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     if (!validate()) return
@@ -78,6 +182,7 @@ export default function Login() {
     setLoading(true)
 
     if (mode === "register") {
+      logout()
       staffLogout()
       const result = await registerUser({
         name: form.name,
@@ -97,8 +202,18 @@ export default function Login() {
       return
     }
 
+    logout()
     staffLogout()
-    const loginResult = await loginWithCredentials(form.identifier, form.password)
+    clearAllSessions()
+    let loginResult
+    try {
+      loginResult = await loginDirectly(form.identifier, form.password)
+    } catch (error) {
+      loginResult = {
+        ok: false,
+        message: error?.message || "Tai khoan khong hop le.",
+      }
+    }
     setLoading(false)
     if (!loginResult.ok) {
       setErrors(prev => ({
@@ -111,11 +226,14 @@ export default function Login() {
     const nextRole = String(loginResult.user?.role || "").trim().toLowerCase()
     if (nextRole === "staff" || nextRole === "driver") {
       logout()
+      clearAllSessions()
       acceptStaffSession({ ...loginResult.user, role: nextRole }, loginResult.token)
       redirectTo("/staff/dashboard")
       return
     }
 
+    persistUserSession(loginResult.user, loginResult.token)
+    login(loginResult.user)
     redirectTo("/")
   }
 
@@ -189,7 +307,7 @@ export default function Login() {
             {mode === "register" ? (
               <>
                 <div className="ln-field">
-                  <label>Ho va ten</label>
+                  <label>Họ và tên</label>
                   <input
                     type="text"
                     placeholder="Nguyen Van A"
@@ -222,7 +340,7 @@ export default function Login() {
                   {errors.email && <span className="ln-err">{errors.email}</span>}
                 </div>
                 <div className="ln-field">
-                  <label>So dien thoai</label>
+                  <label>Số điện thoại</label>
                   <input
                     type="text"
                     placeholder="0123456789"
@@ -233,10 +351,10 @@ export default function Login() {
                   {errors.phone && <span className="ln-err">{errors.phone}</span>}
                 </div>
                 <div className="ln-field">
-                  <label>Dia chi</label>
+                  <label>Địa chỉ</label>
                   <input
                     type="text"
-                    placeholder="So nha, duong, quan..."
+                    placeholder="Số nhà, đường, quận..."
                     value={form.address}
                     onChange={event => setField("address", event.target.value)}
                     className={errors.address ? "err" : ""}
@@ -244,7 +362,7 @@ export default function Login() {
                   {errors.address && <span className="ln-err">{errors.address}</span>}
                 </div>
                 <div className="ln-field">
-                  <label>Gioi tinh</label>
+                  <label>Giới tính</label>
                   <select value={form.gender} onChange={event => setField("gender", event.target.value)} className={errors.gender ? "err" : ""}>
                     <option value="MALE">Nam</option>
                     <option value="FEMALE">Nữ</option>
@@ -292,7 +410,7 @@ export default function Login() {
 
             {mode === "register" && (
               <div className="ln-field">
-                <label>Xac nhan mat khau</label>
+                <label>Xác nhận mật khẩu</label>
                 <div className="ln-pass-wrap">
                   <input
                     type={showPass ? "text" : "password"}

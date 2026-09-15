@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react"
+import { findStaffAccountByIdentifier } from "../data/authDb"
 import { isJwtTokenExpired } from "../services/jwt"
 import { getMyInfoApi, loginUserApi, updateMyInfoApi } from "../services/authApi"
 import { getApiErrorMessage } from "../services/apiClient"
@@ -42,7 +43,7 @@ export function isStaffLoggedIn() {
 
 function toSafeStaff(account, fallbackRole = "staff") {
   const normalized = normalizeUserResponse(account)
-  const nextRole = String(account?.role || normalized?.role || fallbackRole).trim().toLowerCase()
+  const nextRole = String(account?.role || account?.userRole || fallbackRole || normalized?.role).trim().toLowerCase()
   return {
     ...normalized,
     role: nextRole,
@@ -50,7 +51,7 @@ function toSafeStaff(account, fallbackRole = "staff") {
   }
 }
 
-async function fetchCurrentStaff(token, roleHint) {
+async function fetchCurrentStaff(roleHint, token) {
   const profile = await getMyInfoApi(token)
   return toSafeStaff(profile, roleHint)
 }
@@ -64,7 +65,26 @@ function hydrateStoredStaff() {
   }
 
   clearStaffSessionStorage()
-  return { staff: null, token: null }
+
+  const userShadow = loadStorage("hs_user")
+  const userShadowToken = localStorage.getItem("hs_user_token")
+  const identifier = userShadow?.username || userShadow?.email || ""
+
+  if (!userShadow?.id || !userShadowToken || isJwtTokenExpired(userShadowToken) || !identifier) {
+    return { staff: null, token: null }
+  }
+
+  const matchedStaff = findStaffAccountByIdentifier(identifier)
+  if (!matchedStaff) {
+    return { staff: null, token: null }
+  }
+
+  const hydratedStaff = toSafeStaff({ ...userShadow, role: matchedStaff.role }, matchedStaff.role)
+  clearUserSessionShadow()
+  saveStorage(STAFF_SESSION_KEY, hydratedStaff)
+  localStorage.setItem(STAFF_TOKEN_KEY, userShadowToken)
+
+  return { staff: hydratedStaff, token: userShadowToken }
 }
 
 export function StaffProvider({ children }) {
@@ -90,19 +110,19 @@ export function StaffProvider({ children }) {
   async function staffLogin(identifier, password) {
     try {
       const nextToken = await loginUserApi({ username: identifier.trim(), password })
-      const nextStaff = await fetchCurrentStaff(nextToken, "staff")
+      const nextStaff = await fetchCurrentStaff("staff", nextToken)
       const nextRole = String(nextStaff?.role || "").trim().toLowerCase()
 
       if (nextRole !== "staff" && nextRole !== "driver") {
         clearStaffSessionStorage()
-        return { ok: false, message: "Tai khoan nay khong co quyen staff." }
+        return { ok: false, message: "Tài khoản này không có quyền staff." }
       }
 
       const safeStaff = syncStaffSession({ ...nextStaff, role: nextRole }, nextToken)
       return { ok: true, staff: safeStaff, token: nextToken }
     } catch (error) {
       clearStaffSessionStorage()
-      return { ok: false, message: getApiErrorMessage(error, "Khong the dang nhap staff") }
+      return { ok: false, message: getApiErrorMessage(error, "Không thể đăng nhập staff") }
     }
   }
 
@@ -117,7 +137,7 @@ export function StaffProvider({ children }) {
 
   async function updateStaffProfile(data) {
     if (!staff?.id) {
-      return { ok: false, message: "Ban chua dang nhap tai khoan staff" }
+      return { ok: false, message: "Bạn chưa đăng nhập tài khoản staff" }
     }
 
     try {
@@ -126,16 +146,16 @@ export function StaffProvider({ children }) {
         phone: data.phone,
         address: data.address,
       }, token)
-      const refreshed = await fetchCurrentStaff(token, staff.role)
+      const refreshed = await fetchCurrentStaff(staff.role, token)
       const safeStaff = syncStaffSession({ ...refreshed, role: staff.role }, token)
       return { ok: true, staff: safeStaff }
     } catch (error) {
-      return { ok: false, message: getApiErrorMessage(error, "Khong the cap nhat staff") }
+      return { ok: false, message: getApiErrorMessage(error, "Không thể cập nhật staff") }
     }
   }
 
   function changeStaffPassword() {
-    return { ok: false, message: "Backend hien chua co endpoint doi mat khau cho staff" }
+    return { ok: false, message: "Backend hiện chưa có endpoint đổi mật khẩu cho staff" }
   }
 
   return (

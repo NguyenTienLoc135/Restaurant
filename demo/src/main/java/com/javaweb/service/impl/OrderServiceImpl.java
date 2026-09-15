@@ -7,7 +7,6 @@ import com.javaweb.entity.Order;
 import com.javaweb.entity.OrderDetail;
 import com.javaweb.entity.User;
 import com.javaweb.enums.OrderStatus;
-import com.javaweb.model.request.OrderCancelRequest;
 import com.javaweb.model.request.OrderRequest;
 import com.javaweb.model.response.OrderDetailResponse;
 import com.javaweb.model.response.OrderResponse;
@@ -48,39 +47,16 @@ public class OrderServiceImpl implements OrderService {
         User driver = order.getDriver();
         OrderResponse orderResponse = new OrderResponse();
         orderResponse.setId(order.getId());
-        orderResponse.setCustomerId(user != null ? user.getId() : null);
-        orderResponse.setUsername(user != null ? user.getUsername() : null);
+        orderResponse.setUsername(user.getUsername());
         orderResponse.setDriverName(driver != null ? driver.getUsername() : null);
-        orderResponse.setUserPhone(user != null ? user.getPhone() : null);
+        orderResponse.setUserPhone(user.getPhone());
         orderResponse.setDriverPhone(driver != null ? driver.getPhone() : null);
-        orderResponse.setOrderTime(order.getOrderTime());
         orderResponse.setAddress(order.getAddress());
-        orderResponse.setNote(order.getNote());
         orderResponse.setDeliveryFee(order.getDeliveryFee());
         orderResponse.setItemsTotal(order.getItemsTotal());
-        BigDecimal itemsTotal = order.getItemsTotal() != null ? order.getItemsTotal() : BigDecimal.ZERO;
-        BigDecimal deliveryFee = order.getDeliveryFee() != null ? order.getDeliveryFee() : BigDecimal.ZERO;
-        orderResponse.setTotalPrice(itemsTotal.add(deliveryFee));
+        orderResponse.setTotalPrice(order.getItemsTotal());
         orderResponse.setStatus(order.getStatus());
         return orderResponse;
-    }
-
-    private String mergeCancelReason(String currentNote, String reason) {
-        String normalizedReason = reason == null ? "" : reason.trim();
-        if (normalizedReason.isEmpty()) {
-            return currentNote;
-        }
-
-        String reasonLine = "Ly do huy: " + normalizedReason;
-        if (currentNote == null || currentNote.isBlank()) {
-            return reasonLine;
-        }
-
-        if (currentNote.contains(reasonLine)) {
-            return currentNote;
-        }
-
-        return currentNote + System.lineSeparator() + reasonLine;
     }
 
     private List<OrderDetailResponse> orderDetailResponseFilter(Order order){
@@ -89,7 +65,7 @@ public class OrderServiceImpl implements OrderService {
         for(OrderDetail detail : orderDetails){
             OrderDetailResponse orderDetail = new OrderDetailResponse();
             orderDetail.setName(detail.getItem().getName());
-            orderDetail.setPrice(detail.getItem().getPrice());
+            orderDetail.setPrice(detail.getUnitPrice() != null ? detail.getUnitPrice() : detail.getItem().getPrice());
             orderDetail.setDescription(detail.getItem().getDescription());
             orderDetail.setAmount(detail.getQuantity());
             orderDetailResponse.add(orderDetail);
@@ -144,11 +120,6 @@ public class OrderServiceImpl implements OrderService {
     @PreAuthorize("hasAuthority('ROLE_STAFF')")
     public String updateOrderStatus(Integer id, OrderStatus status) {
         Order e = orderRepository.findById(id).orElseThrow();
-        if (!OrderStatus.DELIVERING.equals(status)
-                && !OrderStatus.COMPLETED.equals(status)
-                && !OrderStatus.INCOMPLETE.equals(status)) {
-            e.setDriver(null);
-        }
         e.setStatus(status);
         orderRepository.save(e);
         return "Cap nhat thanh cong";
@@ -189,7 +160,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
-    public String cancelMyOrder(Integer id, OrderCancelRequest request) {
+    public String deleteMyOrder(Integer id) {
         Integer userId = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
         Order order = orderRepository.findById(id)
@@ -197,11 +168,9 @@ public class OrderServiceImpl implements OrderService {
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(userId)) {
             throw new AccessDeniedException("Forbidden");
         }
-        if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.ACCEPTED){
-            throw new IllegalArgumentException("Don hang da vao khau giao, khong the huy");
+        if (order.getStatus() != OrderStatus.PENDING){
+            throw new IllegalArgumentException("Don hang da duoc xu ly, khong the huy");
         }
-        order.setNote(mergeCancelReason(order.getNote(), request != null ? request.getReason() : null));
-        order.setDriver(null);
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
         return "Da huy don hang.";

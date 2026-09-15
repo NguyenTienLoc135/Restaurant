@@ -1,8 +1,9 @@
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 import { useAuth } from "../../context/AuthContext"
 import { useMenu } from "../../context/MenuContext"
+import { useStaff } from "../../staff/StaffContext"
 import "./Checkout.css"
 
 const JAVA_INT_MAX = 2147483647
@@ -27,7 +28,8 @@ const DELIVERY_FEE = 15000
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
   const { addOrder, user } = useAuth()
-  const { isBackendSynced } = useMenu()
+  const { staff } = useStaff()
+  const { isBackendSynced, items: menuItems, refreshItems } = useMenu()
   const navigate = useNavigate()
 
   const [name, setName] = useState(user?.name || "")
@@ -41,8 +43,6 @@ export default function Checkout() {
   const [success, setSuccess] = useState(false)
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const submitLockRef = useRef(false)
 
   const deliveryFee = subtotal >= 199000 ? 0 : DELIVERY_FEE
   const total = subtotal + deliveryFee
@@ -58,7 +58,8 @@ export default function Checkout() {
   }
 
   async function handleSubmit() {
-    if (submitLockRef.current || success) {
+    if (staff) {
+      setSubmitError("Tài khoản staff hoặc driver không thể đặt món ở giao diện khách hàng.")
       return
     }
 
@@ -70,8 +71,28 @@ export default function Checkout() {
 
     setSubmitError("")
 
+    let availableMenuItems = menuItems
+
     if (!isBackendSynced) {
-      setSubmitError("Menu chua dong bo voi backend. Vui long tai lai trang va thu lai sau khi server san sang.")
+      try {
+        const refreshedItems = await refreshItems()
+        if (!refreshedItems.length) {
+          setSubmitError("Menu tren backend hien dang trong. Vui long kiem tra lai danh sach mon trong he thong.")
+          return
+        }
+        availableMenuItems = refreshedItems
+      } catch {
+        setSubmitError("Menu chua dong bo voi backend. Vui long tai lai trang va thu lai sau khi server san sang.")
+        return
+      }
+    }
+
+    const validMenuIds = new Set(availableMenuItems.map(item => Number(item.id)))
+    const missingItems = items.filter(item => !validMenuIds.has(Number(item.id)))
+
+    if (missingItems.length) {
+      const missingNames = missingItems.map(item => `"${item.name}"`).join(", ")
+      setSubmitError(`Mot vai mon trong gio khong con ton tai tren backend: ${missingNames}. Vui long quay lai menu va them lai mon.`)
       return
     }
 
@@ -92,9 +113,6 @@ export default function Checkout() {
       return
     }
 
-    submitLockRef.current = true
-    setIsSubmitting(true)
-
     const result = await addOrder({
       items: normalizedItems.map(item => ({
         id: item.id,
@@ -111,8 +129,6 @@ export default function Checkout() {
     })
 
     if (!result.ok) {
-      submitLockRef.current = false
-      setIsSubmitting(false)
       setSubmitError(result.message || "Không thể đặt hàng")
       return
     }
@@ -249,9 +265,7 @@ export default function Checkout() {
           <div className="co-sum-divider" />
           <div className="co-sum-total"><span>Tổng cộng</span><span>{total.toLocaleString("vi-VN")}₫</span></div>
 
-          <button className="co-submit-btn" onClick={handleSubmit} disabled={isSubmitting || success}>
-            {isSubmitting || success ? "Đang gửi đơn..." : "Đặt hàng ngay 🛵"}
-          </button>
+          <button className="co-submit-btn" onClick={handleSubmit}>Đặt hàng ngay 🛵</button>
 
           <p className="co-sum-note">
             Bằng cách đặt hàng, bạn đồng ý với <a href="#">Điều khoản dịch vụ</a> của chúng tôi.

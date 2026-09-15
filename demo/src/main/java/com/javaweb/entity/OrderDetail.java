@@ -1,34 +1,31 @@
 package com.javaweb.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Entity
 @Getter
 @Setter
-@Table(name = "order_detail")
+@Table(name="order_detail")
 public class OrderDetail {
-    @EmbeddedId
-    private OrderDetailId id;
+    @Id
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    private Integer Id;
 
-    @MapsId("orderId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 
-    @MapsId("menuItemId")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "menu_item_id")
+    @JoinColumn(name="item_id")
     private Item item;
 
-    @Column(name = "quantity")
+    @Column(name="quantity")
     private Integer quantity;
+
+    @Column(name = "unit_price")
+    private BigDecimal unitPrice;
 }

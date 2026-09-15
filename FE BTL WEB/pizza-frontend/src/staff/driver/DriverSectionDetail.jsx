@@ -244,7 +244,7 @@ export default function DriverSectionDetail({ section, isDriverMode, onBack }) {
               showActions={actionMode}
               onClaim={handleClaim}
               onComplete={id => handleFinish(id, "COMPLETED")}
-              onCancel={id => handleFinish(id, "CANCELLED")}
+              onCancel={id => handleFinish(id, "INCOMPLETE")}
             />
           ))}
         </div>

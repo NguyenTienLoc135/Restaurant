@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 import { useMenu } from "../../context/MenuContext"
@@ -14,15 +14,58 @@ const SORT_TABS = [
 const BADGE_COLOR = {
   "Bán chạy": "#c8a96e",
   "Đặc biệt": "#1a3f7a",
-  "Mới": "#22c55e",
+  Mới: "#22c55e",
   "Thuần chay": "#16a34a",
   Signature: "#7c3aed",
 }
 
+function fmtPrice(price) {
+  return `${price.toLocaleString("vi-VN")}₫`
+}
+
+function createDefaultFilters(priceMax) {
+  return {
+    cat: "all",
+    availability: "true",
+    sort: "default",
+    search: "",
+    priceMin: 0,
+    priceMax,
+  }
+}
+
+function sanitizeFilters(filters, nextPriceMax, previousPriceMax = nextPriceMax) {
+  const priceMin = Math.min(Math.max(Number(filters.priceMin) || 0, 0), nextPriceMax)
+  const rawMax = Number(filters.priceMax) || nextPriceMax
+  const maxSource = rawMax === previousPriceMax ? nextPriceMax : rawMax
+  const priceMax = Math.min(Math.max(maxSource, priceMin), nextPriceMax)
+
+  return {
+    cat: filters.cat || "all",
+    availability: filters.availability ?? "true",
+    sort: filters.sort || "default",
+    search: (filters.search || "").trim(),
+    priceMin,
+    priceMax,
+  }
+}
+
+function areFiltersEqual(left, right) {
+  return (
+    left.cat === right.cat &&
+    left.availability === right.availability &&
+    left.sort === right.sort &&
+    left.search === right.search &&
+    left.priceMin === right.priceMin &&
+    left.priceMax === right.priceMax
+  )
+}
+
 function highlight(text, query) {
-  if (!query.trim()) return text
+  const source = text || ""
+  if (!query.trim()) return source
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi")
-  return text.split(regex).map((part, index) =>
+  return source.split(regex).map((part, index) =>
     part.toLowerCase() === query.toLowerCase()
       ? <mark key={index} className="om-hl">{part}</mark>
       : part
@@ -31,71 +74,116 @@ function highlight(text, query) {
 
 export default function OrderMenu() {
   const { categories, items, searchItems } = useMenu()
-  const [cat, setCat] = useState("all")
-  const [availability, setAvailability] = useState("true")
-  const [sort, setSort] = useState("default")
-  const [search, setSearch] = useState("")
-  const [showSuggest, setShowSuggest] = useState(false)
   const { addItem, totalItems, subtotal } = useCart()
-  const [added, setAdded] = useState({})
   const navigate = useNavigate()
   const searchRef = useRef(null)
+  const [showSuggest, setShowSuggest] = useState(false)
+  const [added, setAdded] = useState({})
 
   const PRICE_MAX = useMemo(() => {
     if (!items.length) return 500000
     return Math.ceil(Math.max(...items.map(item => item.price)) / 50000) * 50000
   }, [items])
 
-  const [priceMin, setPriceMin] = useState(0)
-  const [priceMax, setPriceMax] = useState(PRICE_MAX)
+  const [draftFilters, setDraftFilters] = useState(() => createDefaultFilters(PRICE_MAX))
+  const [appliedFilters, setAppliedFilters] = useState(() => createDefaultFilters(PRICE_MAX))
+  const previousPriceMaxRef = useRef(PRICE_MAX)
 
   useEffect(() => {
-    setPriceMax(PRICE_MAX)
+    const previousPriceMax = previousPriceMaxRef.current
+    setDraftFilters(prev => sanitizeFilters(prev, PRICE_MAX, previousPriceMax))
+    setAppliedFilters(prev => sanitizeFilters(prev, PRICE_MAX, previousPriceMax))
+    previousPriceMaxRef.current = PRICE_MAX
   }, [PRICE_MAX])
-
-  const minPct = (priceMin / PRICE_MAX) * 100
-  const maxPct = (priceMax / PRICE_MAX) * 100
-  const isPriceFiltered = priceMin > 0 || priceMax < PRICE_MAX
-
-  function handleMinChange(event) {
-    const value = Number(event.target.value)
-    if (value <= priceMax - 50000) setPriceMin(value)
-  }
-
-  function handleMaxChange(event) {
-    const value = Number(event.target.value)
-    if (value >= priceMin + 50000) setPriceMax(value)
-  }
-
-  function resetPrice() {
-    setPriceMin(0)
-    setPriceMax(PRICE_MAX)
-  }
 
   useEffect(() => {
     function handler(event) {
-      if (searchRef.current && !searchRef.current.contains(event.target)) setShowSuggest(false)
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggest(false)
+      }
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  const builder = {
-    name: search,
-    category: cat === "all" ? "" : cat,
-    leftPrice: priceMin,
-    rightPrice: priceMax,
-    isAvailable: availability,
-  }
+  const draftBuilder = useMemo(
+    () => ({
+      name: draftFilters.search,
+      category: draftFilters.cat === "all" ? "" : draftFilters.cat,
+      leftPrice: draftFilters.priceMin,
+      rightPrice: draftFilters.priceMax,
+      isAvailable: draftFilters.availability,
+    }),
+    [draftFilters]
+  )
+
+  const appliedBuilder = useMemo(
+    () => ({
+      name: appliedFilters.search,
+      category: appliedFilters.cat === "all" ? "" : appliedFilters.cat,
+      leftPrice: appliedFilters.priceMin,
+      rightPrice: appliedFilters.priceMax,
+      isAvailable: appliedFilters.availability,
+    }),
+    [appliedFilters]
+  )
 
   const suggestions = useMemo(() => {
-    if (!search.trim()) return []
-    return searchItems(builder).slice(0, 8)
-  }, [builder.category, builder.isAvailable, builder.leftPrice, builder.name, builder.rightPrice, searchItems, search])
+    if (!draftFilters.search.trim()) return []
+    return searchItems(draftBuilder).slice(0, 8)
+  }, [draftBuilder, draftFilters.search, searchItems])
 
-  let filtered = searchItems(builder)
-  if (sort === "price_asc") filtered = [...filtered].sort((a, b) => a.price - b.price)
-  if (sort === "price_desc") filtered = [...filtered].sort((a, b) => b.price - a.price)
+  const filtered = useMemo(() => {
+    let nextItems = searchItems(appliedBuilder)
+    if (appliedFilters.sort === "price_asc") {
+      nextItems = [...nextItems].sort((left, right) => left.price - right.price)
+    }
+    if (appliedFilters.sort === "price_desc") {
+      nextItems = [...nextItems].sort((left, right) => right.price - left.price)
+    }
+    return nextItems
+  }, [appliedBuilder, appliedFilters.sort, searchItems])
+
+  const hasPendingChanges = !areFiltersEqual(draftFilters, appliedFilters)
+  const isPriceFiltered = draftFilters.priceMin > 0 || draftFilters.priceMax < PRICE_MAX
+  const minPct = (draftFilters.priceMin / PRICE_MAX) * 100
+  const maxPct = (draftFilters.priceMax / PRICE_MAX) * 100
+
+  function updateDraftFilter(key, value) {
+    setDraftFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  function handleMinChange(event) {
+    const value = Number(event.target.value)
+    if (value <= draftFilters.priceMax - 50000) {
+      updateDraftFilter("priceMin", value)
+    }
+  }
+
+  function handleMaxChange(event) {
+    const value = Number(event.target.value)
+    if (value >= draftFilters.priceMin + 50000) {
+      updateDraftFilter("priceMax", value)
+    }
+  }
+
+  function resetPrice() {
+    setDraftFilters(prev => ({ ...prev, priceMin: 0, priceMax: PRICE_MAX }))
+  }
+
+  function applyFilters() {
+    const nextFilters = sanitizeFilters(draftFilters, PRICE_MAX)
+    setDraftFilters(nextFilters)
+    setAppliedFilters(nextFilters)
+    setShowSuggest(false)
+  }
+
+  function clearAll() {
+    const defaults = createDefaultFilters(PRICE_MAX)
+    setDraftFilters(defaults)
+    setAppliedFilters(defaults)
+    setShowSuggest(false)
+  }
 
   function handleAdd(item) {
     if (item.status === MENU_STATUS.outOfStock) return
@@ -104,21 +192,19 @@ export default function OrderMenu() {
     setTimeout(() => setAdded(prev => ({ ...prev, [item.id]: false })), 800)
   }
 
-  function clearAll() {
-    setSearch("")
-    setCat("all")
-    setAvailability("true")
-    resetPrice()
-  }
-
   return (
     <div className="om-page">
       <div className="om-header">
         <div className="om-header-inner">
           <div>
             <span className="om-eyebrow">Đặt hàng giao về nhà</span>
-            <h1 className="om-title">Chọn món<br /><em>của bạn</em></h1>
+            <h1 className="om-title">
+              Chọn món
+              <br />
+              <em>của bạn</em>
+            </h1>
           </div>
+
           <button
             className={`om-cart-btn ${totalItems > 0 ? "has-items" : ""}`}
             onClick={() => navigate("/cart")}
@@ -127,7 +213,7 @@ export default function OrderMenu() {
             <span className="om-cart-icon">🛒</span>
             <span className="om-cart-info">
               <span className="om-cart-count">{totalItems} món</span>
-              <span className="om-cart-price">{subtotal.toLocaleString("vi-VN")}₫</span>
+              <span className="om-cart-price">{fmtPrice(subtotal)}</span>
             </span>
             <span className="om-cart-arrow">→</span>
           </button>
@@ -140,47 +226,101 @@ export default function OrderMenu() {
                 className="om-search-input"
                 type="text"
                 placeholder="Tìm tên món, nguyên liệu..."
-                value={search}
-                onChange={event => { setSearch(event.target.value); setShowSuggest(true) }}
+                value={draftFilters.search}
+                onChange={event => {
+                  updateDraftFilter("search", event.target.value)
+                  setShowSuggest(true)
+                }}
                 onFocus={() => setShowSuggest(true)}
+                onKeyDown={event => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    applyFilters()
+                  }
+                }}
               />
-              {search && (
-                <button className="om-search-clear" onClick={() => { setSearch(""); setShowSuggest(false) }}>✕</button>
+              {draftFilters.search && (
+                <button
+                  className="om-search-clear"
+                  onClick={() => {
+                    updateDraftFilter("search", "")
+                    setShowSuggest(false)
+                  }}
+                  aria-label="Xóa từ khóa tìm kiếm"
+                >
+                  ✕
+                </button>
               )}
+              <button className="om-search-submit" onClick={applyFilters}>
+                Search
+              </button>
             </div>
+
             {showSuggest && suggestions.length > 0 && (
               <div className="om-suggest-dropdown">
                 {suggestions.map(item => (
-                  <button key={item.id} className="om-suggest-item" onMouseDown={() => { setSearch(item.name); setShowSuggest(false) }}>
+                  <button
+                    key={item.id}
+                    className="om-suggest-item"
+                    onMouseDown={() => {
+                      updateDraftFilter("search", item.name)
+                      setShowSuggest(false)
+                    }}
+                  >
                     <img src={item.img} alt="" className="om-suggest-img" />
-                    <span className="om-suggest-name">{highlight(item.name, search)}</span>
-                    <span className="om-suggest-price">{item.price.toLocaleString("vi-VN")}₫</span>
+                    <span className="om-suggest-name">{highlight(item.name, draftFilters.search)}</span>
+                    <span className="om-suggest-price">{fmtPrice(item.price)}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
+
+          <button
+            className="om-reset-btn"
+            onClick={clearAll}
+            title="Đặt lại bộ lọc"
+            aria-label="Đặt lại bộ lọc"
+          >
+            ↻
+          </button>
         </div>
 
         <div className="om-tabs">
-          <button className={`om-tab ${cat === "all" ? "active" : ""}`} onClick={() => setCat("all")}>Tất cả</button>
+          <button className={`om-tab ${draftFilters.cat === "all" ? "active" : ""}`} onClick={() => updateDraftFilter("cat", "all")}>
+            Tất cả
+          </button>
           {categories.map(category => (
-            <button key={category.key} className={`om-tab ${cat === category.key ? "active" : ""}`} onClick={() => setCat(category.key)}>
+            <button
+              key={category.key}
+              className={`om-tab ${draftFilters.cat === category.key ? "active" : ""}`}
+              onClick={() => updateDraftFilter("cat", category.key)}
+            >
               {category.label}
             </button>
           ))}
         </div>
 
         <div className="om-tabs" style={{ paddingTop: 0 }}>
-          <button className={`om-tab ${availability === "" ? "active" : ""}`} onClick={() => setAvailability("")}>Tất cả trạng thái</button>
-          <button className={`om-tab ${availability === "true" ? "active" : ""}`} onClick={() => setAvailability("true")}>Có sẵn</button>
-          <button className={`om-tab ${availability === "false" ? "active" : ""}`} onClick={() => setAvailability("false")}>Hết món</button>
+          <button className={`om-tab ${draftFilters.availability === "" ? "active" : ""}`} onClick={() => updateDraftFilter("availability", "")}>
+            Tất cả trạng thái
+          </button>
+          <button className={`om-tab ${draftFilters.availability === "true" ? "active" : ""}`} onClick={() => updateDraftFilter("availability", "true")}>
+            Có sẵn
+          </button>
+          <button className={`om-tab ${draftFilters.availability === "false" ? "active" : ""}`} onClick={() => updateDraftFilter("availability", "false")}>
+            Hết món
+          </button>
         </div>
 
         <div className="om-sort-bar">
           <span className="om-sort-label">SẮP XẾP:</span>
           {SORT_TABS.map(item => (
-            <button key={item.key} className={`om-sort-tab ${sort === item.key ? "active" : ""}`} onClick={() => setSort(item.key)}>
+            <button
+              key={item.key}
+              className={`om-sort-tab ${draftFilters.sort === item.key ? "active" : ""}`}
+              onClick={() => updateDraftFilter("sort", item.key)}
+            >
               {item.label}
             </button>
           ))}
@@ -189,23 +329,31 @@ export default function OrderMenu() {
 
           <div className="om-price-range">
             <span className="om-price-label">Khoảng giá:</span>
-            <span className="om-price-val om-price-min">{priceMin.toLocaleString("vi-VN")}₫</span>
+            <span className="om-price-val om-price-min">{fmtPrice(draftFilters.priceMin)}</span>
 
             <div className="om-slider-wrap">
               <div className="om-slider-track">
                 <div className="om-slider-fill" style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }} />
               </div>
-              <input type="range" className="om-slider om-slider-min" min={0} max={PRICE_MAX} step={10000} value={priceMin} onChange={handleMinChange} />
-              <input type="range" className="om-slider om-slider-max" min={0} max={PRICE_MAX} step={10000} value={priceMax} onChange={handleMaxChange} />
+              <input type="range" className="om-slider om-slider-min" min={0} max={PRICE_MAX} step={10000} value={draftFilters.priceMin} onChange={handleMinChange} />
+              <input type="range" className="om-slider om-slider-max" min={0} max={PRICE_MAX} step={10000} value={draftFilters.priceMax} onChange={handleMaxChange} />
             </div>
 
-            <span className="om-price-val">{priceMax.toLocaleString("vi-VN")}₫</span>
+            <span className="om-price-val">{fmtPrice(draftFilters.priceMax)}</span>
 
             {isPriceFiltered && (
-              <button className="om-price-reset" onClick={resetPrice}>Reset</button>
+              <button className="om-price-reset" onClick={resetPrice}>
+                Reset
+              </button>
             )}
           </div>
         </div>
+
+        {hasPendingChanges && (
+          <div className="om-filter-hint">
+            <span>Bạn đã thay đổi bộ lọc. Bấm Search để cập nhật kết quả.</span>
+          </div>
+        )}
       </div>
 
       <div className="om-grid-wrap">
@@ -227,14 +375,17 @@ export default function OrderMenu() {
                     </span>
                   )}
                   {item.status === MENU_STATUS.outOfStock && (
-                    <span className="om-badge" style={{ background: "#991b1b", left: "auto", right: 14 }}>Hết món</span>
+                    <span className="om-badge" style={{ background: "#991b1b", left: "auto", right: 14 }}>
+                      Hết món
+                    </span>
                   )}
                 </div>
+
                 <div className="om-card-body">
-                  <h3 className="om-card-name">{highlight(item.name, search)}</h3>
-                  <p className="om-card-desc">{highlight(item.desc, search)}</p>
+                  <h3 className="om-card-name">{highlight(item.name, appliedFilters.search)}</h3>
+                  <p className="om-card-desc">{highlight(item.desc, appliedFilters.search)}</p>
                   <div className="om-card-footer">
-                    <span className="om-price">{item.price.toLocaleString("vi-VN")}₫</span>
+                    <span className="om-price">{fmtPrice(item.price)}</span>
                     <button
                       className={`om-add-btn ${added[item.id] ? "added" : ""}`}
                       onClick={() => handleAdd(item)}
@@ -255,7 +406,7 @@ export default function OrderMenu() {
         <div className="om-sticky-cart" onClick={() => navigate("/cart")}>
           <span>🛒 {totalItems} món</span>
           <span>Xem giỏ hàng →</span>
-          <span>{subtotal.toLocaleString("vi-VN")}₫</span>
+          <span>{fmtPrice(subtotal)}</span>
         </div>
       )}
     </div>
