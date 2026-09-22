@@ -39,7 +39,6 @@ public class OrderDetailServiceImpl implements OrderDetailService {
             od.setOrder(order);
             od.setItem(item);
             od.setQuantity(d.getAmount());
-            od.setUnitPrice(item.getPrice());
             details.add(od);
         }
         return details;

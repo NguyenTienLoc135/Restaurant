@@ -65,7 +65,7 @@ public class OrderServiceImpl implements OrderService {
         for(OrderDetail detail : orderDetails){
             OrderDetailResponse orderDetail = new OrderDetailResponse();
             orderDetail.setName(detail.getItem().getName());
-            orderDetail.setPrice(detail.getUnitPrice() != null ? detail.getUnitPrice() : detail.getItem().getPrice());
+           // orderDetail.setPrice(detail.getUnitPrice() != null ? detail.getUnitPrice() : detail.getItem().getPrice());
             orderDetail.setDescription(detail.getItem().getDescription());
             orderDetail.setAmount(detail.getQuantity());
             orderDetailResponse.add(orderDetail);
