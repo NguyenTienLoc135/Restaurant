@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import { findStaffAccountByIdentifier } from "../../data/authDb"
 import { decodeJwtToken, isJwtTokenExpired } from "../../services/jwt"
 import { normalizeUserResponse } from "../../services/responseAdapters"
 import { useStaff } from "../../staff/StaffContext"
@@ -108,6 +107,13 @@ function buildAuthHeaders(token) {
   }
 }
 
+function normalizeAppRole(role) {
+  const normalized = String(role || "").trim().toUpperCase()
+  if (normalized === "STAFF") return "staff"
+  if (normalized === "DRIVER") return "driver"
+  return "customer"
+}
+
 async function canAccess(url, token) {
   try {
     const response = await fetch(url, {
@@ -126,11 +132,6 @@ async function inferRoleAfterLogin(identifier, token) {
 
   if (await canAccess(`${API_BASE_URL}/delivery`, token)) {
     return "driver"
-  }
-
-  const matchedStaffAccount = findStaffAccountByIdentifier(identifier)
-  if (matchedStaffAccount?.role === "staff" || matchedStaffAccount?.role === "driver") {
-    return matchedStaffAccount.role
   }
 
   return "customer"
@@ -162,7 +163,9 @@ async function inferRoleAfterLogin(identifier, token) {
     }
 
     const nextUser = normalizeUserResponse(await meResponse.json())
-    const inferredRole = await inferRoleAfterLogin(username, nextToken)
+    const inferredRole = nextUser?.userRole
+      ? normalizeAppRole(nextUser.userRole)
+      : await inferRoleAfterLogin(username, nextToken)
 
     return {
       ok: true,

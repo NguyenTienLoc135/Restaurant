@@ -56,15 +56,40 @@ function buildBookingDateParams(filters) {
     return { bookingDate: filters.date }
   }
 
-  if (filters.fromDate || filters.toDate) {
-    return {
-      ...(filters.fromDate ? { fromDate: filters.fromDate } : {}),
-      ...(filters.toDate ? { toDate: filters.toDate } : {}),
-    }
-  }
-
   const defaults = createDefaultDateFilters()
   return { bookingDate: defaults.date }
+}
+
+function getBookingTimestamp(booking) {
+  const value = booking?.bookingDateTime || booking?.bookingTime
+  if (!value) return null
+
+  const timestamp = new Date(value).getTime()
+  return Number.isNaN(timestamp) ? null : timestamp
+}
+
+function getDateRangeTimestamps(filters) {
+  let fromTs = filters.fromDate ? new Date(`${filters.fromDate}T00:00:00`).getTime() : null
+  let toTs = filters.toDate ? new Date(`${filters.toDate}T23:59:59.999`).getTime() : null
+
+  if (Number.isNaN(fromTs)) fromTs = null
+  if (Number.isNaN(toTs)) toTs = null
+
+  return { fromTs, toTs }
+}
+
+function filterBookingsByDateRange(bookings, filters) {
+  if (!filters.fromDate && !filters.toDate) return bookings
+
+  const { fromTs, toTs } = getDateRangeTimestamps(filters)
+  return bookings.filter(booking => {
+    const timestamp = getBookingTimestamp(booking)
+    if (timestamp == null) return false
+
+    const matchFrom = fromTs == null || timestamp >= fromTs
+    const matchTo = toTs == null || timestamp <= toTs
+    return matchFrom && matchTo
+  })
 }
 
 export default function StaffBookingManager() {
@@ -85,7 +110,13 @@ export default function StaffBookingManager() {
         const list = await loadCollection(() => getStaffBookingsApi(buildBookingDateParams(appliedDateFilters)))
         if (!active) return
 
-        setBookings(normalizeBookingList(list))
+        const normalized = normalizeBookingList(list)
+        const filtered =
+          appliedDateFilters.date || (!appliedDateFilters.fromDate && !appliedDateFilters.toDate)
+            ? normalized
+            : filterBookingsByDateRange(normalized, appliedDateFilters)
+
+        setBookings(filtered)
         setError("")
       } catch (apiError) {
         if (!active) return

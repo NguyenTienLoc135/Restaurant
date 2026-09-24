@@ -13,11 +13,10 @@ const TABS = [
   { key: "bookings", icon: "🧾", label: "Đặt bàn" },
 ]
 
-const CANCEL_REASONS = [
-  { value: "Đổi phương thức thanh toán", label: "Đổi phương thức thanh toán" },
-  { value: "Đổi món", label: "Đổi món" },
-  { value: "Đơn hàng quá lâu chưa được làm", label: "Đơn hàng quá lâu chưa được làm" },
-  { value: "OTHERS", label: "Khác" },
+const GENDER_OPTIONS = [
+  { value: "", label: "Chưa cập nhật" },
+  { value: "MALE", label: "Nam" },
+  { value: "FEMALE", label: "Nữ" },
 ]
 
 function getOrderDisplayStatus(order) {
@@ -51,8 +50,7 @@ function buildUserFromToken(token) {
     id: payload?.userId || payload?.id || username,
     username,
     fullname: username,
-    email: username.includes("@") ? username : "",
-    role: payload?.role || payload?.userRole || "CUSTOMER",
+    email: "",
   })
 }
 
@@ -72,6 +70,7 @@ export default function Profile() {
     email: resolvedUser?.email || "",
     phone: resolvedUser?.phone || "",
     address: resolvedUser?.address || "",
+    gender: resolvedUser?.userGender || "",
   })
   const [infoSaved, setInfoSaved] = useState(false)
   const [infoError, setInfoError] = useState("")
@@ -80,8 +79,6 @@ export default function Profile() {
   const [pwSaved, setPwSaved] = useState(false)
   const [showPw, setShowPw] = useState(false)
   const [cancelTarget, setCancelTarget] = useState(null)
-  const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0].value)
-  const [cancelOtherReason, setCancelOtherReason] = useState("")
   const [cancelError, setCancelError] = useState("")
   const [cancelSuccess, setCancelSuccess] = useState("")
   const [cancelSubmitting, setCancelSubmitting] = useState(false)
@@ -105,6 +102,7 @@ export default function Profile() {
       name: info.name,
       phone: info.phone,
       address: info.address,
+      gender: info.gender,
     })
 
     if (!result.ok) {
@@ -136,28 +134,18 @@ export default function Profile() {
 
   function openCancelForm(order) {
     setCancelTarget(order)
-    setCancelReason(CANCEL_REASONS[0].value)
-    setCancelOtherReason("")
     setCancelError("")
     setCancelSuccess("")
   }
 
   function closeCancelForm() {
     setCancelTarget(null)
-    setCancelReason(CANCEL_REASONS[0].value)
-    setCancelOtherReason("")
     setCancelError("")
   }
 
   async function submitOrderCancel(event) {
     event.preventDefault()
     if (!cancelTarget) return
-
-    const reason = cancelReason === "OTHERS" ? cancelOtherReason.trim() : cancelReason
-    if (!reason) {
-      setCancelError("Vui long nhap ly do huy don")
-      return
-    }
 
     const numericId = Number(String(cancelTarget.id).replace("#4P", ""))
     if (!Number.isInteger(numericId) || numericId <= 0) {
@@ -167,7 +155,7 @@ export default function Profile() {
 
     setCancelSubmitting(true)
     setCancelError("")
-    const result = await auth.cancelOrder(numericId, reason)
+    const result = await auth.cancelOrder(numericId)
     setCancelSubmitting(false)
 
     if (!result.ok) {
@@ -232,9 +220,31 @@ export default function Profile() {
                 <label>Địa chỉ</label>
                 <input value={info.address} onChange={event => setInfo(current => ({ ...current, address: event.target.value }))} />
               </div>
-              <div className="pf-field">
-                <label>Ngày tham gia</label>
-                <input value={resolvedUser.joined || "-"} disabled className="pf-disabled" />
+              <div className="pf-field-row">
+                <div className="pf-field">
+                  <label>Giới tính</label>
+                  <select value={info.gender} onChange={event => setInfo(current => ({ ...current, gender: event.target.value }))}>
+                    {GENDER_OPTIONS.map(option => (
+                      <option key={option.value || "unknown"} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="pf-field">
+                  <label>Tên đăng nhập</label>
+                  <input value={resolvedUser.username || "-"} disabled className="pf-disabled" />
+                </div>
+              </div>
+              <div className="pf-field-row">
+                <div className="pf-field">
+                  <label>Vai trò</label>
+                  <input value={resolvedUser.userRole || "-"} disabled className="pf-disabled" />
+                </div>
+                <div className="pf-field">
+                  <label>Trạng thái</label>
+                  <input value={resolvedUser.userIsActive || "-"} disabled className="pf-disabled" />
+                </div>
               </div>
               {infoError && <span className="pf-err">{infoError}</span>}
               <div className="pf-form-footer">
@@ -293,7 +303,7 @@ export default function Profile() {
           <div className="pf-section">
             <div className="pf-section-header">
               <h2 className="pf-section-title">Lịch sử đơn hàng</h2>
-              <p className="pf-section-sub">Theo dõi đơn hàng, trạng thái giao và hủy đơn có kèm lý do</p>
+              <p className="pf-section-sub">Theo dõi đơn hàng và hủy những đơn còn ở trạng thái chờ xử lý</p>
             </div>
             <div className="pf-table-wrap">
               <table className="pf-table">
@@ -358,32 +368,12 @@ export default function Profile() {
                 <div className="pf-cancel-head">
                   <div>
                     <h3>Huỷ đơn {cancelTarget.id}</h3>
-                    <p>Chọn lý do hủy đơn. Nếu cần, bạn có thể ghi thêm mô tả cụ thể.</p>
+                    <p>Backend hiện chỉ hỗ trợ hủy trực tiếp đơn đang chờ xử lý, không nhận thêm lý do hủy.</p>
                   </div>
                   <button type="button" className="pf-inline-btn ghost" onClick={closeCancelForm}>
                     Đóng
                   </button>
                 </div>
-                <div className="pf-cancel-options">
-                  {CANCEL_REASONS.map(option => (
-                    <label key={option.value} className={`pf-cancel-option ${cancelReason === option.value ? "active" : ""}`}>
-                      <input
-                        type="radio"
-                        name="cancel-reason"
-                        value={option.value}
-                        checked={cancelReason === option.value}
-                        onChange={event => setCancelReason(event.target.value)}
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-                {cancelReason === "OTHERS" && (
-                  <div className="pf-field">
-                    <label>Ly do khac</label>
-                    <input value={cancelOtherReason} onChange={event => setCancelOtherReason(event.target.value)} />
-                  </div>
-                )}
                 {cancelError && <span className="pf-err">{cancelError}</span>}
                 <div className="pf-form-footer">
                   <button type="submit" className="pf-save-btn" disabled={cancelSubmitting}>
@@ -399,7 +389,7 @@ export default function Profile() {
           <div className="pf-section">
             <div className="pf-section-header">
               <h2 className="pf-section-title">Lịch sử đặt bàn</h2>
-              <p className="pf-section-sub">Dữ liệu hiện đang lấy từ local của FE</p>
+              <p className="pf-section-sub">Dữ liệu đang được lấy từ backend của tài khoản hiện tại</p>
             </div>
             <div className="pf-table-wrap">
               <table className="pf-table">

@@ -33,6 +33,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+    private static final BigDecimal DEFAULT_DELIVERY_FEE = BigDecimal.valueOf(20000);
 
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
@@ -45,6 +46,8 @@ public class OrderServiceImpl implements OrderService {
     private OrderResponse orderResponseFilter(Order order){
         User user = order.getCustomer();
         User driver = order.getDriver();
+        BigDecimal itemsTotal = order.getItemsTotal() != null ? order.getItemsTotal() : BigDecimal.ZERO;
+        BigDecimal deliveryFee = order.getDeliveryFee() != null ? order.getDeliveryFee() : BigDecimal.ZERO;
         OrderResponse orderResponse = new OrderResponse();
         orderResponse.setId(order.getId());
         orderResponse.setUsername(user.getUsername());
@@ -52,9 +55,9 @@ public class OrderServiceImpl implements OrderService {
         orderResponse.setUserPhone(user.getPhone());
         orderResponse.setDriverPhone(driver != null ? driver.getPhone() : null);
         orderResponse.setAddress(order.getAddress());
-        orderResponse.setDeliveryFee(order.getDeliveryFee());
-        orderResponse.setItemsTotal(order.getItemsTotal());
-        orderResponse.setTotalPrice(order.getItemsTotal());
+        orderResponse.setDeliveryFee(deliveryFee);
+        orderResponse.setItemsTotal(itemsTotal);
+        orderResponse.setTotalPrice(itemsTotal.add(deliveryFee));
         orderResponse.setStatus(order.getStatus());
         return orderResponse;
     }
@@ -65,7 +68,7 @@ public class OrderServiceImpl implements OrderService {
         for(OrderDetail detail : orderDetails){
             OrderDetailResponse orderDetail = new OrderDetailResponse();
             orderDetail.setName(detail.getItem().getName());
-           // orderDetail.setPrice(detail.getUnitPrice() != null ? detail.getUnitPrice() : detail.getItem().getPrice());
+            orderDetail.setPrice(detail.getItem().getPrice());
             orderDetail.setDescription(detail.getItem().getDescription());
             orderDetail.setAmount(detail.getQuantity());
             orderDetailResponse.add(orderDetail);
@@ -148,7 +151,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderDetail> details = orderDetailService.buildDetails(request.getItems(), order);
         BigDecimal itemsTotal = orderDetailService.calculateItemsTotal(details);
         order.setItemsTotal(itemsTotal);
-        order.setDeliveryFee(BigDecimal.ZERO);
+        order.setDeliveryFee(DEFAULT_DELIVERY_FEE);
         order.setOrderDetail(details);
 
         orderRepository.save(order);

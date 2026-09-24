@@ -26,6 +26,18 @@ function normalizeLookupValue(value) {
   return String(value || "").trim().toLowerCase()
 }
 
+function matchesCustomerBooking(booking, customer) {
+  const bookingUsername = normalizeLookupValue(booking?.username || booking?.name)
+  const customerUsername = normalizeLookupValue(customer?.username)
+  const customerName = normalizeLookupValue(customer?.name || customer?.fullname)
+
+  if (bookingUsername && customerUsername) {
+    return bookingUsername === customerUsername
+  }
+
+  return !!bookingUsername && bookingUsername === customerName
+}
+
 function isCustomerLikeUser(user) {
   const role = String(user?.userRole || user?.role || "").trim().toUpperCase()
   return role === "CUSTOMER" || role === "USER"
@@ -38,6 +50,9 @@ function getCustomerKey(customer) {
 }
 
 function normalizeCustomer(user) {
+  const userRole = String(user?.userRole || user?.role || "").trim().toUpperCase()
+  const status = String(user?.userIsActive || user?.isActive || user?.status || "").trim().toUpperCase()
+
   return {
     ...user,
     key: getCustomerKey(user),
@@ -47,8 +62,8 @@ function normalizeCustomer(user) {
     email: user?.email || "",
     phone: user?.phone || "",
     address: user?.address || "",
-    userRole: String(user?.userRole || user?.role || "CUSTOMER").trim().toUpperCase() || "CUSTOMER",
-    status: String(user?.userIsActive || user?.isActive || user?.status || "ACTIVE").trim().toUpperCase() || "ACTIVE",
+    userRole: userRole || "",
+    status: status || "",
   }
 }
 
@@ -546,14 +561,17 @@ export default function StaffCustomerManager() {
     try {
       const [ordersResult, bookingsResult] = await Promise.allSettled([
         loadCollection(() => getStaffOrdersApi({ userId: customer.id })),
-        loadCollection(() => getStaffBookingsApi({ userId: customer.id })),
+        loadCollection(() => getStaffBookingsApi()),
       ])
 
       const orders = ordersResult.status === "fulfilled"
         ? sortByLatest(normalizeOrderList(ordersResult.value), getOrderHistoryTimestamp)
         : []
       const bookings = bookingsResult.status === "fulfilled"
-        ? sortByLatest(normalizeBookingList(bookingsResult.value), getBookingHistoryTimestamp)
+        ? sortByLatest(
+            normalizeBookingList(bookingsResult.value).filter(booking => matchesCustomerBooking(booking, customer)),
+            getBookingHistoryTimestamp
+          )
         : []
 
       const failures = [ordersResult, bookingsResult].filter(result => result.status === "rejected")

@@ -8,6 +8,7 @@ const BLANK = {
   name: "",
   desc: "",
   price: "",
+  unit: "",
   img: "",
   status: MENU_STATUS.available,
 }
@@ -44,6 +45,7 @@ export default function StaffMenuManager() {
       name: item.name || "",
       desc: item.desc || "",
       price: item.price ?? "",
+      unit: item.unit || "",
       img: item.img || "",
       status: item.status || MENU_STATUS.available,
     })
@@ -225,6 +227,11 @@ export default function StaffMenuManager() {
                     <option value={MENU_STATUS.outOfStock}>Hết món</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="sm-field">
+                <label>Đơn vị</label>
+                <input value={form.unit} onChange={event => setField("unit", event.target.value)} placeholder="Ví dụ: phần, cái, ly" />
               </div>
 
               <div className="sm-field">

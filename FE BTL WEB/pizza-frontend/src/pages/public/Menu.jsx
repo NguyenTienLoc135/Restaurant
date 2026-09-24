@@ -150,25 +150,13 @@ function DishDetail({ item, loading, error, onClose }) {
             <p className="dd-story-text">{item.desc}</p>
           </div>
         )}
-        {item.origin && (
+        {item.unit && (
           <div className="dd-row">
-            <span className="dd-label">Nguồn gốc</span>
-            <span className="dd-val">{item.origin}</span>
+            <span className="dd-label">Đơn vị</span>
+            <span className="dd-val">{item.unit}</span>
           </div>
         )}
-        {item.ingredients && (
-          <div className="dd-row">
-            <span className="dd-label">Nguyên liệu</span>
-            <span className="dd-val">{item.ingredients}</span>
-          </div>
-        )}
-        {item.story && (
-          <div className="dd-story">
-            <span className="dd-label">Câu chuyện</span>
-            <p className="dd-story-text">{item.story}</p>
-          </div>
-        )}
-        {!loading && !error && !item.desc && !item.origin && !item.ingredients && !item.story && (
+        {!loading && !error && !item.desc && !item.unit && (
           <p className="dd-val">Chưa có thông tin chi tiết cho món này.</p>
         )}
       </div>

@@ -17,7 +17,7 @@ function normalizeDateValue(value) {
 }
 
 function formatDate(date) {
-  return date ? date.toLocaleDateString("vi-VN") : new Date().toLocaleDateString("vi-VN")
+  return date ? date.toLocaleDateString("vi-VN") : ""
 }
 
 function formatTime(date) {
@@ -141,8 +141,8 @@ export function normalizeUserResponse(user) {
   const name = firstValue(user.name, user.fullname, user.username, "Khach hang")
   const email = firstValue(user.email)
   const joinedDate = normalizeDateValue(firstValue(user.joinedAt, user.createdAt, user.joined))
-  const userRole = String(firstValue(user.userRole, user.role, "CUSTOMER")).trim().toUpperCase() || "CUSTOMER"
-  const userIsActive = String(firstValue(user.userIsActive, user.isActive, "ACTIVE")).trim().toUpperCase() || "ACTIVE"
+  const userRole = String(firstValue(user.userRole, user.role, "")).trim().toUpperCase()
+  const userIsActive = String(firstValue(user.userIsActive, user.isActive, "")).trim().toUpperCase()
 
   return {
     ...user,
@@ -153,11 +153,12 @@ export function normalizeUserResponse(user) {
     email,
     phone: firstValue(user.phone),
     address: firstValue(user.address),
-    role: firstValue(user.role, user.userRole, "customer"),
-    userRole,
-    isActive: userIsActive,
-    userIsActive,
-    status: userIsActive,
+    userGender: firstValue(user.userGender, user.gender, ""),
+    role: firstValue(user.role, user.userRole, ""),
+    userRole: userRole || "",
+    isActive: userIsActive || "",
+    userIsActive: userIsActive || "",
+    status: userIsActive || "",
     joined: typeof user.joined === "string" && user.joined ? user.joined : formatDate(joinedDate),
     avatar: firstValue(user.avatar, name.charAt(0).toUpperCase()),
   }
@@ -209,7 +210,7 @@ export function normalizeOrderResponse(order) {
   return {
     ...order,
     id: normalizedId,
-    date: order.date || formatDate(createdAt),
+    date: firstValue(order.date, formatDate(createdAt), "-"),
     createdAt: firstValue(order.createdAt, createdAt?.toISOString(), ""),
     customer: firstValue(order.customer, order.name, order.fullname, order.username, "Khách online"),
     customerEmail: firstValue(order.customerEmail, order.email),
@@ -220,7 +221,7 @@ export function normalizeOrderResponse(order) {
     statusCode,
     status: normalizedStatus,
     notes: firstValue(order.notes, order.note),
-    deliveryTime: firstValue(order.deliveryTime, createdAt ? formatTime(createdAt) : ""),
+    deliveryTime: firstValue(order.deliveryTime, createdAt ? formatTime(createdAt) : "--:--"),
     userId: firstValue(order.userId, order.customerId, null),
     driverName,
     driverPhone,
@@ -274,12 +275,9 @@ export function normalizeMenuItemResponse(item) {
     catLabel: MENU_CATEGORY_LABEL[cat] || cat,
     name,
     desc: firstValue(item.desc, item.description),
+    unit: firstValue(item.unit),
     price: Number(item.price) || 0,
     img: firstValue(item.img, "https://via.placeholder.com/500x320?text=No+Image"),
-    badge: firstValue(item.badge, apiCategory === "DESSERTS" ? "Mới" : null),
-    origin: firstValue(item.origin),
-    ingredients: firstValue(item.ingredients),
-    story: firstValue(item.story),
     status:
       MENU_STATUS_BE_TO_UI[String(firstValue(item.isAvailable, item.itemAvailable)).toUpperCase()] ||
       firstValue(item.status, "Có sẵn"),

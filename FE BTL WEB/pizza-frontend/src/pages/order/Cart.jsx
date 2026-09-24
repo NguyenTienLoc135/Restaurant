@@ -2,13 +2,13 @@ import { useNavigate } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 import "./Cart.css"
 
-const DELIVERY_FEE = 15000
+const DELIVERY_FEE = 20000
 
 export default function Cart() {
   const { items, updateQty, removeItem, subtotal, totalItems } = useCart()
   const navigate = useNavigate()
 
-  const deliveryFee = subtotal >= 199000 ? 0 : DELIVERY_FEE
+  const deliveryFee = DELIVERY_FEE
   const total = subtotal + deliveryFee
 
   if (items.length === 0) return (
@@ -84,15 +84,8 @@ export default function Cart() {
             </div>
             <div className="cs-row">
               <span>Phí giao hàng</span>
-              <span className={deliveryFee === 0 ? "cs-free" : ""}>
-                {deliveryFee === 0 ? "Miễn phí" : `${DELIVERY_FEE.toLocaleString("vi-VN")}₫`}
-              </span>
+              <span>{DELIVERY_FEE.toLocaleString("vi-VN")}₫</span>
             </div>
-            {deliveryFee > 0 && (
-              <p className="cs-hint">
-                Thêm {(199000 - subtotal).toLocaleString("vi-VN")}₫ để miễn phí giao hàng
-              </p>
-            )}
           </div>
 
           <div className="cs-divider" />

@@ -16,7 +16,6 @@ public class ItemRequest {
     private String price ;
     private String description ;
     private String unit ;
-    private String unitPrice ;
     private String img;
     private ItemCategory category;
     private ItemAvailable isAvailable ;

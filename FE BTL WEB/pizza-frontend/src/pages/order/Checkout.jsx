@@ -23,7 +23,7 @@ const TIME_SLOTS = [
   "19:00", "19:30", "20:00", "20:30", "21:00", "21:30",
 ]
 
-const DELIVERY_FEE = 15000
+const DELIVERY_FEE = 20000
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
@@ -44,7 +44,7 @@ export default function Checkout() {
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState("")
 
-  const deliveryFee = subtotal >= 199000 ? 0 : DELIVERY_FEE
+  const deliveryFee = DELIVERY_FEE
   const total = subtotal + deliveryFee
 
   function validate() {
@@ -260,7 +260,7 @@ export default function Checkout() {
           <div className="co-sum-row"><span>Tạm tính</span><span>{subtotal.toLocaleString("vi-VN")}₫</span></div>
           <div className="co-sum-row">
             <span>Phí giao hàng</span>
-            <span className={deliveryFee === 0 ? "co-free" : ""}>{deliveryFee === 0 ? "Miễn phí" : `${DELIVERY_FEE.toLocaleString("vi-VN")}₫`}</span>
+            <span>{DELIVERY_FEE.toLocaleString("vi-VN")}₫</span>
           </div>
           <div className="co-sum-divider" />
           <div className="co-sum-total"><span>Tổng cộng</span><span>{total.toLocaleString("vi-VN")}₫</span></div>

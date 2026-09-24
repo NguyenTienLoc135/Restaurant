@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useState } from "react"
-import { INITIAL_MENU_ITEMS, MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
+import { MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
 import {
   createStaffItemApi,
   deleteStaffItemApi,
@@ -11,19 +11,6 @@ import { getApiErrorMessage } from "../services/apiClient"
 import { normalizeMenuList } from "../services/responseAdapters"
 
 const MenuContext = createContext(null)
-
-function loadMenuFallback() {
-  try {
-    const saved = localStorage.getItem("hs_menu")
-    return saved ? JSON.parse(saved) : INITIAL_MENU_ITEMS
-  } catch {
-    return INITIAL_MENU_ITEMS
-  }
-}
-
-function saveMenuFallback(items) {
-  localStorage.setItem("hs_menu", JSON.stringify(items))
-}
 
 function normalizeSearchText(value) {
   return (value || "").trim().toLowerCase()
@@ -52,8 +39,7 @@ export function searchMenuItems(items, builder = {}) {
     const matchesName =
       !normalizedName ||
       item.name.toLowerCase().includes(normalizedName) ||
-      item.desc?.toLowerCase().includes(normalizedName) ||
-      item.ingredients?.toLowerCase().includes(normalizedName)
+      item.desc?.toLowerCase().includes(normalizedName)
 
     const matchesCategory =
       !normalizedCategory ||
@@ -72,7 +58,7 @@ export function searchMenuItems(items, builder = {}) {
 }
 
 export function MenuProvider({ children }) {
-  const [items, setItems] = useState(loadMenuFallback)
+  const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isBackendSynced, setIsBackendSynced] = useState(false)
@@ -84,11 +70,10 @@ export function MenuProvider({ children }) {
         const apiItems = await fetchPublicItemsApi()
         const normalized = normalizeMenuList(apiItems)
         setItems(normalized)
-        saveMenuFallback(normalized)
         setIsBackendSynced(true)
         setError("")
       } catch (apiError) {
-        setItems(loadMenuFallback())
+        setItems([])
         setIsBackendSynced(false)
         setError(getApiErrorMessage(apiError, "Khong the tai menu tu server"))
       } finally {
@@ -103,7 +88,6 @@ export function MenuProvider({ children }) {
     const apiItems = await fetchStaffItemsApi()
     const normalized = normalizeMenuList(apiItems)
     setItems(normalized)
-    saveMenuFallback(normalized)
     setIsBackendSynced(true)
     return normalized
   }
@@ -153,7 +137,6 @@ export function MenuProvider({ children }) {
         const apiItems = await fetchPublicItemsApi(builder)
         const normalized = normalizeMenuList(apiItems)
         setItems(normalized)
-        saveMenuFallback(normalized)
         setIsBackendSynced(true)
         return normalized
       },

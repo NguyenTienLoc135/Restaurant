@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Entity
 @Getter
 @Setter
@@ -25,6 +23,4 @@ public class OrderDetail {
 
     @Column(name="quantity")
     private Integer quantity;
-
-
 }

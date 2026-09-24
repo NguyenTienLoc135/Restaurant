@@ -26,10 +26,6 @@ export async function getOrderDetailsApi(id, token) {
 }
 
 export async function cancelMyOrderApi(id, reason, token) {
-  const response = await apiClient.put(
-    `/orders/${id}/cancel`,
-    { reason },
-    withAuthConfig(token)
-  )
+  const response = await apiClient.delete(`/orders/${id}`, withAuthConfig(token))
   return response.data
 }
