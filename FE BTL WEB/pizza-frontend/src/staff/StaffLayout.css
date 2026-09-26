@@ -419,7 +419,12 @@
 }
 
 /* STATS ROW */
-.sm-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 32px; }
+.sm-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
 .sm-stat-card {
   background: white; border: 1px solid var(--s-border);
   padding: 20px 22px; display: flex; align-items: center; gap: 14px;
