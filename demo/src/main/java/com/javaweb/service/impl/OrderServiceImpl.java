@@ -54,6 +54,7 @@ public class OrderServiceImpl implements OrderService {
         orderResponse.setDriverName(driver != null ? driver.getUsername() : null);
         orderResponse.setUserPhone(user.getPhone());
         orderResponse.setDriverPhone(driver != null ? driver.getPhone() : null);
+        orderResponse.setOrderTime(order.getOrderTime());
         orderResponse.setAddress(order.getAddress());
         orderResponse.setDeliveryFee(deliveryFee);
         orderResponse.setItemsTotal(itemsTotal);

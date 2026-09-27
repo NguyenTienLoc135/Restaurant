@@ -20,6 +20,7 @@ public class OrderResponse {
     private String userPhone;
     private String driverName;
     private String driverPhone;
+    private LocalDateTime orderTime;
     private String address;
     private BigDecimal itemsTotal;
     private BigDecimal deliveryFee;

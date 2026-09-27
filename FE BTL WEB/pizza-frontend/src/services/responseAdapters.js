@@ -10,10 +10,40 @@ function normalizeId(value, prefix) {
   return `${prefix}${text}`
 }
 
+// ── FIX: xử lý thêm format "2026-04-12 10:30:00" (dấu cách thay vì T)
+// và timestamp số, chuỗi ISO có offset
 function normalizeDateValue(value) {
   if (!value) return null
-  const date = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
+
+  // Đã là Date object
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value
+  }
+
+  // Timestamp số (milliseconds)
+  if (typeof value === "number") {
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+
+  const str = String(value).trim()
+  if (!str) return null
+
+  // Thử parse trực tiếp trước (ISO 8601 chuẩn)
+  let d = new Date(str)
+  if (!Number.isNaN(d.getTime())) return d
+
+  // FIX: "2026-04-12 10:30:00" → "2026-04-12T10:30:00"
+  const isoFixed = str.replace(" ", "T")
+  d = new Date(isoFixed)
+  if (!Number.isNaN(d.getTime())) return d
+
+  // "2026-04-12 10:30:00.000" (với milliseconds)
+  const isoMs = str.replace(" ", "T").replace(/(\d{2}:\d{2}:\d{2})(\.\d+)?$/, "$1")
+  d = new Date(isoMs)
+  if (!Number.isNaN(d.getTime())) return d
+
+  return null
 }
 
 function formatDate(date) {
@@ -22,22 +52,15 @@ function formatDate(date) {
 
 function formatTime(date) {
   return date
-    ? date.toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
     : "--:--"
 }
 
 function formatMoney(value) {
   if (value == null || value === "") return ""
-  if (typeof value === "string" && /\d/.test(value) && /[^\d.,\s]/.test(value)) {
-    return value
-  }
-
+  if (typeof value === "string" && /\d/.test(value) && /[^\d.,\s]/.test(value)) return value
   const numeric = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""))
   if (!Number.isFinite(numeric)) return String(value)
-
   return `${numeric.toLocaleString("vi-VN")}d`
 }
 
@@ -178,7 +201,6 @@ function buildOrderItems(order) {
       })
       .filter(Boolean)
       .join(", ")
-
     if (summary) return summary
   }
 
@@ -188,29 +210,47 @@ function buildOrderItems(order) {
 export function normalizeOrderResponse(order) {
   if (!order) return null
 
+  // FIX: thêm orderDate, createTime, timeCreated, created_at vào danh sách tìm kiếm
   const createdAt = normalizeDateValue(
-    firstValue(order.createdAt, order.orderTime, order.dateTime, order.deliveryTime)
+    firstValue(
+      order.createdAt,
+      order.created_at,
+      order.orderTime,
+      order.orderDate,
+      order.createTime,
+      order.timeCreated,
+      order.dateTime,
+      order.deliveryTime,
+    )
   )
+
   const rawStatusCode = String(
     firstValue(order.statusCode, ORDER_STATUS_CODE_BY_LABEL[order.status], order.status, "")
   ).toUpperCase()
-  const driverName = firstValue(order.driverName)
+
+  const driverName  = firstValue(order.driverName)
   const driverPhone = firstValue(order.driverPhone)
+
   const statusCode =
-    rawStatusCode === "DELIVERY" && driverName
-      ? "DELIVERING"
-      : rawStatusCode
+    rawStatusCode === "DELIVERY" && driverName ? "DELIVERING" : rawStatusCode
+
   const normalizedStatus =
     statusCode === "DELIVERING"
       ? "Đang giao hàng"
       : ORDER_STATUS_MAP[statusCode] || firstValue(order.status, "Chờ xác nhận")
+
   const normalizedId =
-    typeof order.id === "string" && order.id.startsWith("#") ? order.id : normalizeId(order.id, "#4P")
+    typeof order.id === "string" && order.id.startsWith("#")
+      ? order.id
+      : normalizeId(order.id, "#4P")
+
+  // FIX: nếu createdAt parse được thì dùng, ngược lại giữ "-" thay vì ""
+  const dateDisplay = firstValue(order.date, formatDate(createdAt)) || "-"
 
   return {
     ...order,
     id: normalizedId,
-    date: firstValue(order.date, formatDate(createdAt), "-"),
+    date: dateDisplay,
     createdAt: firstValue(order.createdAt, createdAt?.toISOString(), ""),
     customer: firstValue(order.customer, order.name, order.fullname, order.username, "Khách online"),
     customerEmail: firstValue(order.customerEmail, order.email),
@@ -231,18 +271,33 @@ export function normalizeOrderResponse(order) {
 export function normalizeBookingResponse(booking) {
   if (!booking) return null
 
-  const bookingDate = normalizeDateValue(firstValue(booking.bookingTime, booking.createdAt))
+  // FIX: thêm bookingDate, reservationTime, checkInTime, created_at
+  const bookingDate = normalizeDateValue(
+    firstValue(
+      booking.bookingTime,
+      booking.bookingDate,
+      booking.reservationTime,
+      booking.checkInTime,
+      booking.createdAt,
+      booking.created_at,
+    )
+  )
+
   const rawStatusCode = String(firstValue(booking.statusCode, booking.status, "")).toUpperCase()
+
   const normalizedStatus =
-    BOOKING_STATUS_MAP[String(orderOrBookingStatus(booking.status)).toUpperCase()] ||
+    BOOKING_STATUS_MAP[String(firstValue(booking.status, "")).toUpperCase()] ||
     firstValue(booking.status, "Chờ xác nhận")
+
   const normalizedId =
-    typeof booking.id === "string" && booking.id.startsWith("#") ? booking.id : normalizeId(booking.id, "#BK")
+    typeof booking.id === "string" && booking.id.startsWith("#")
+      ? booking.id
+      : normalizeId(booking.id, "#BK")
 
   return {
     ...booking,
     id: normalizedId,
-    date: firstValue(booking.date, formatDate(bookingDate)),
+    date: firstValue(booking.date, formatDate(bookingDate)) || "-",
     time: firstValue(booking.time, formatTime(bookingDate)),
     createdAt: firstValue(booking.createdAt, ""),
     bookingDateTime: firstValue(booking.bookingTime, booking.createdAt, bookingDate?.toISOString(), ""),
@@ -255,10 +310,6 @@ export function normalizeBookingResponse(booking) {
     table: firstValue(booking.table),
     userId: firstValue(booking.userId, booking.customerId, null),
   }
-}
-
-function orderOrBookingStatus(value) {
-  return firstValue(value, "")
 }
 
 export function normalizeMenuItemResponse(item) {
@@ -307,4 +358,3 @@ export function normalizeUserList(users) {
 export function normalizeMenuList(items) {
   return toArray(items).map(normalizeMenuItemResponse).filter(Boolean)
 }
-
