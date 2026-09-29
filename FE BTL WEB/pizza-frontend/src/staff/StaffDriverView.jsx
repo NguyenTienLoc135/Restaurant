@@ -15,11 +15,6 @@ export default function StaffDriverView() {
           <div className="sm-header">
             <div>
               <h2 className="sm-title">Vận hành giao hàng</h2>
-              <p className="sm-sub">
-                {isDriverMode
-                  ? "Chọn đúng nhóm đơn để tải dữ liệu khi cần. Page này không còn fetch cả 3 danh sách cùng lúc."
-                  : "Staff theo dõi vận hành driver theo từng nhóm đơn riêng, chỉ mở mục nào thì mới tải dữ liệu mục đó."}
-              </p>
             </div>
           </div>
 

@@ -29,7 +29,7 @@ export default function StaffProfileManager() {
     const result = await updateStaffProfile(info)
     setInfoState({
       type: result.ok ? "success" : "error",
-      message: result.ok ? "Đã cập nhật thông tin tài khoản." : result.message,
+      message: result.ok ? (result.message || "Đã cập nhật thông tin tài khoản.") : result.message,
     })
   }
 
@@ -38,7 +38,6 @@ export default function StaffProfileManager() {
       <div className="sm-header sm-header-stack">
         <div>
           <h1 className="sm-title">Tài khoản nhân viên</h1>
-          <p className="sm-sub">Màn này đã được chỉnh theo đúng dữ liệu và endpoint hồ sơ mà backend hiện đang hỗ trợ.</p>
         </div>
         <div className="ssp-badge-wrap">
           <span className="ssp-role-badge">{staff?.role || "staff"}</span>

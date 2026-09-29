@@ -683,9 +683,6 @@ export default function StaffCustomerManager() {
       <div className="sm-header sm-header-stack">
         <div>
           <h2 className="sm-title">Quản lý khách hàng</h2>
-          <p className="sm-sub">
-            Danh sách khách hàng được đồng bộ theo response user của backend. History booking/order chỉ được gọi khi staff thực sự mở xem.
-          </p>
         </div>
       </div>
 

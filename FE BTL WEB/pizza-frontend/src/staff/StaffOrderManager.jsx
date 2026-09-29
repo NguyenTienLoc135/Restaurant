@@ -267,7 +267,6 @@ export default function StaffOrderManager() {
       <div className="sm-header">
         <div>
           <h2 className="sm-title">Quản lý đơn hàng</h2>
-          <p className="sm-sub">Mặc định chỉ tải đơn trong ngày hôm nay. Khi staff chọn ngày hoặc khoảng ngày, frontend sẽ query lại backend theo bộ lọc mới.</p>
         </div>
       </div>
 

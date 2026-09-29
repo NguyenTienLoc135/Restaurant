@@ -259,7 +259,7 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      await updateMyInfoApi({
+      const responseMessage = await updateMyInfoApi({
         fullname: data.name,
         phone: data.phone,
         address: data.address,
@@ -269,7 +269,12 @@ export function AuthProvider({ children }) {
       const nextUser = await fetchCurrentUser(token)
       setSession({ user: nextUser, token })
       saveStorage(USER_SESSION_KEY, nextUser)
-      return { ok: true, user: nextUser, token }
+      return {
+        ok: true,
+        user: nextUser,
+        token,
+        message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "",
+      }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể cập nhật thông tin") }
     }
@@ -281,13 +286,18 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      await createOrderApi({
+      const responseMessage = await createOrderApi({
         note: order.notes || "",
         items: order.items,
       }, token)
       const nextOrders = await fetchOrderHistory(token)
       setOrders(nextOrders)
-      return { ok: true, message: "Đặt hàng thành công" }
+      return {
+        ok: true,
+        message: typeof responseMessage === "string" && responseMessage.trim()
+          ? responseMessage
+          : "Đặt hàng thành công",
+      }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể tạo đơn hàng") }
     }
@@ -299,10 +309,15 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      await cancelMyOrderApi(orderId, null, token)
+      const responseMessage = await cancelMyOrderApi(orderId, null, token)
       const nextOrders = await fetchOrderHistory(token)
       setOrders(nextOrders)
-      return { ok: true, message: "Đã hủy đơn hàng" }
+      return {
+        ok: true,
+        message: typeof responseMessage === "string" && responseMessage.trim()
+          ? responseMessage
+          : "Đã hủy đơn hàng",
+      }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể hủy đơn hàng") }
     }
@@ -314,13 +329,18 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      await createBookingApi({
+      const responseMessage = await createBookingApi({
         bookingDate: booking.bookingDate,
         guests: booking.guests,
       }, token)
       const nextBookings = await fetchBookingHistory(token)
       setBookings(nextBookings)
-      return { ok: true, message: "Đặt bàn thành công" }
+      return {
+        ok: true,
+        message: typeof responseMessage === "string" && responseMessage.trim()
+          ? responseMessage
+          : "Đặt bàn thành công",
+      }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể tạo đặt bàn") }
     }

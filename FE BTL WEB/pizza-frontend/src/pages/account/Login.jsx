@@ -8,6 +8,15 @@ import "./Login.css"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8082"
 
+function normalizeLoginMessage(message) {
+  const normalized = String(message || "").trim()
+  if (!normalized) return ""
+  if (normalized.toLowerCase() === "bad credentials") {
+    return "sai tên đăng nhập hoặc mật khẩu"
+  }
+  return normalized
+}
+
 export default function Login() {
   const navigate = useNavigate()
   const { user, login, registerUser, logout } = useAuth()
@@ -150,7 +159,7 @@ async function inferRoleAfterLogin(identifier, token) {
 
     const loginText = await loginResponse.text()
     if (!loginResponse.ok) {
-      throw new Error(loginText || "Tai khoan khong hop le.")
+      throw new Error(normalizeLoginMessage(loginText) || "Tai khoan khong hop le.")
     }
 
     const nextToken = loginText.trim().replace(/^"|"$/g, "")
@@ -214,7 +223,7 @@ async function inferRoleAfterLogin(identifier, token) {
     } catch (error) {
       loginResult = {
         ok: false,
-        message: error?.message || "Tai khoan khong hop le.",
+        message: normalizeLoginMessage(error?.message) || "Tai khoan khong hop le.",
       }
     }
     setLoading(false)

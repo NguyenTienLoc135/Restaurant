@@ -200,7 +200,7 @@ export default function Profile() {
     address: resolvedUser?.address || "",
     gender:  resolvedUser?.userGender || "",
   })
-  const [infoSaved,      setInfoSaved]      = useState(false)
+  const [infoSaved,      setInfoSaved]      = useState("")
   const [infoError,      setInfoError]      = useState("")
   const [pw,             setPw]             = useState({ current: "", next: "", confirm: "" })
   const [pwErr,          setPwErr]          = useState({})
@@ -220,7 +220,7 @@ export default function Profile() {
     e.preventDefault(); setInfoError("")
     const result = await auth.updateUser({ name: info.name, phone: info.phone, address: info.address, gender: info.gender })
     if (!result.ok) { setInfoError(result.message || "Không thể cập nhật thông tin"); return }
-    setInfoSaved(true); setTimeout(() => setInfoSaved(false), 2000)
+    setInfoSaved(result.message || ""); setTimeout(() => setInfoSaved(""), 2500)
   }
 
   function savePw(e) {
@@ -248,7 +248,7 @@ export default function Profile() {
     const result = await auth.cancelOrder(numericId)
     setCancelSubmitting(false)
     if (!result.ok) { setCancelError(result.message || "Không thể hủy đơn hàng"); return }
-    setCancelSuccess("Đã gửi yêu cầu hủy đơn hàng"); closeCancelForm()
+    setCancelSuccess(result.message || ""); closeCancelForm()
   }
 
   return (
@@ -305,10 +305,9 @@ export default function Profile() {
                 <div className="pf-field"><label>Trạng thái</label><input value={resolvedUser.userIsActive || "-"} disabled className="pf-disabled" /></div>
               </div>
               {infoError && <span className="pf-err">{infoError}</span>}
+              {infoSaved && <p className="pf-success">{infoSaved}</p>}
               <div className="pf-form-footer">
-                <button type="submit" className={`pf-save-btn ${infoSaved ? "saved" : ""}`}>
-                  {infoSaved ? "✓ Đã lưu" : "Lưu thay đổi"}
-                </button>
+                <button type="submit" className={`pf-save-btn ${infoSaved ? "saved" : ""}`}>Lưu thay đổi</button>
               </div>
             </form>
           </div>

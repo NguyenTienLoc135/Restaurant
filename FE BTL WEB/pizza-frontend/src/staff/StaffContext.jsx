@@ -126,14 +126,18 @@ export function StaffProvider({ children }) {
     }
 
     try {
-      await updateMyInfoApi({
+      const responseMessage = await updateMyInfoApi({
         fullname: data.name,
         phone: data.phone,
         address: data.address,
       }, token)
       const refreshed = await fetchCurrentStaff(staff.role, token)
       const safeStaff = syncStaffSession({ ...refreshed, role: staff.role }, token)
-      return { ok: true, staff: safeStaff }
+      return {
+        ok: true,
+        staff: safeStaff,
+        message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "",
+      }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể cập nhật staff") }
     }

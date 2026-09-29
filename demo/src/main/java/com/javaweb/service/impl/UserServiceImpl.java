@@ -121,7 +121,7 @@ public class UserServiceImpl implements UserService {
         Integer id = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AccessDeniedException("forbidden"));
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("khong tim thay nguoi dung"));
+                .orElseThrow(() -> new DataNotFoundException("không tìm thấy người dùng"));
         UserResponse userResponse = modelMapper.map(user, UserResponse.class);
         return userResponse;
     }
@@ -134,7 +134,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AccessDeniedException("forbidden"));
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("khong tim thay nguoi dung"));
+                .orElseThrow(() -> new DataNotFoundException("không tìm thấy người dùng"));
 
         if (req.getFullname() != null) user.setFullname(req.getFullname());
         if (req.getPhone() != null) user.setPhone(req.getPhone());
@@ -142,7 +142,7 @@ public class UserServiceImpl implements UserService {
         if (req.getGender() != null) user.setUserGender(req.getGender());
 
         userRepository.save(user);
-        return "Cap nhat thong tin thanh cong";
+        return "Cập nhật thông tin thành công";
     }
 
 }

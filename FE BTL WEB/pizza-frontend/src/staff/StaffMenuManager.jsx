@@ -124,7 +124,6 @@ export default function StaffMenuManager() {
       <div className="sm-header">
         <div>
           <h2 className="sm-title">Quản lý Menu</h2>
-          <p className="sm-sub">Form quản lý này đã được thu gọn theo đúng các field menu mà backend hiện đang hỗ trợ.</p>
         </div>
         <button className="sm-btn" onClick={openAdd}>+ Thêm món mới</button>
       </div>

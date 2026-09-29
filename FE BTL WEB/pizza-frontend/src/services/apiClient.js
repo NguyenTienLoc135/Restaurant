@@ -32,6 +32,15 @@ export const apiClient = axios.create({
   },
 })
 
+function normalizeBackendMessage(message) {
+  const normalized = String(message || "").trim()
+  if (!normalized) return ""
+  if (normalized.toLowerCase() === "bad credentials") {
+    return "sai tên đăng nhập hoặc mật khẩu"
+  }
+  return normalized
+}
+
 apiClient.interceptors.request.use(config => {
   const existingAuthorization = config.headers?.Authorization || config.headers?.authorization
   if (existingAuthorization) {
@@ -49,15 +58,15 @@ export function getApiErrorMessage(error, fallback = "Có lỗi xảy ra, vui l�
   const responseData = error?.response?.data
 
   if (typeof responseData === "string" && responseData.trim()) {
-    return responseData
+    return normalizeBackendMessage(responseData)
   }
 
   if (typeof responseData?.message === "string" && responseData.message.trim()) {
-    return responseData.message
+    return normalizeBackendMessage(responseData.message)
   }
 
   if (typeof error?.message === "string" && error.message.trim()) {
-    return error.message
+    return normalizeBackendMessage(error.message)
   }
 
   return fallback

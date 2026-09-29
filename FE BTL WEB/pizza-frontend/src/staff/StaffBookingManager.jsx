@@ -207,7 +207,6 @@ export default function StaffBookingManager() {
       <div className="sm-header">
         <div>
           <h2 className="sm-title">Quản lý đặt bàn</h2>
-          <p className="sm-sub">Mặc định chỉ tải booking của hôm nay. Staff có thể lọc theo 1 ngày cụ thể hoặc theo khoảng ngày để giảm tải query không cần thiết.</p>
         </div>
       </div>
 
