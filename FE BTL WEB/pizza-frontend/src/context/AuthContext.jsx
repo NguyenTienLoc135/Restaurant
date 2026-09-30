@@ -15,7 +15,7 @@ import {
 } from "../services/authApi"
 import { getApiErrorMessage } from "../services/apiClient"
 import { cancelMyOrderApi, createOrderApi, getMyOrdersApi, getOrderDetailsApi } from "../services/orderApi"
-import { createBookingApi, getMyBookingsApi } from "../services/bookingApi"
+import { cancelMyBookingApi, createBookingApi, getMyBookingsApi } from "../services/bookingApi"
 
 const AuthContext = createContext(null)
 const USER_SESSION_KEY = "hs_user"
@@ -224,7 +224,7 @@ export function AuthProvider({ children }) {
       return { ok: true, user: nextUser, token: nextToken }
     } catch (error) {
       clearUserSessionStorage()
-      return { ok: false, message: getApiErrorMessage(error, "Tên đăng nhập hoặc mật khẩu không đúng") }
+      return { ok: false, message: getApiErrorMessage(error, "sai tên đăng nhập hoặc mật khẩu") }
     }
   }
 
@@ -296,7 +296,7 @@ export function AuthProvider({ children }) {
         ok: true,
         message: typeof responseMessage === "string" && responseMessage.trim()
           ? responseMessage
-          : "Đặt hàng thành công",
+          : "Don hang cua ban da duoc tao va dang cho duyet.",
       }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể tạo đơn hàng") }
@@ -316,7 +316,7 @@ export function AuthProvider({ children }) {
         ok: true,
         message: typeof responseMessage === "string" && responseMessage.trim()
           ? responseMessage
-          : "Đã hủy đơn hàng",
+          : "Da huy don hang.",
       }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể hủy đơn hàng") }
@@ -339,10 +339,30 @@ export function AuthProvider({ children }) {
         ok: true,
         message: typeof responseMessage === "string" && responseMessage.trim()
           ? responseMessage
-          : "Đặt bàn thành công",
+          : "Dat ban thanh cong.",
       }
     } catch (error) {
       return { ok: false, message: getApiErrorMessage(error, "Không thể tạo đặt bàn") }
+    }
+  }
+
+  async function cancelBooking(bookingId) {
+    if (!user?.id || !token) {
+      return { ok: false, message: "Bạn cần đăng nhập để hủy đặt bàn" }
+    }
+
+    try {
+      const responseMessage = await cancelMyBookingApi(bookingId, token)
+      const nextBookings = await fetchBookingHistory(token)
+      setBookings(nextBookings)
+      return {
+        ok: true,
+        message: typeof responseMessage === "string" && responseMessage.trim()
+          ? responseMessage
+          : "Da xoa don dat ban",
+      }
+    } catch (error) {
+      return { ok: false, message: getApiErrorMessage(error, "Không thể hủy đặt bàn") }
     }
   }
 
@@ -373,6 +393,7 @@ export function AuthProvider({ children }) {
         addOrder,
         cancelOrder,
         addBooking,
+        cancelBooking,
         loadingOrders,
         loadingBookings,
       }}
@@ -400,6 +421,7 @@ export function useAuth() {
       addOrder: async () => ({ ok: false }),
       cancelOrder: async () => ({ ok: false }),
       addBooking: async () => ({ ok: false }),
+      cancelBooking: async () => ({ ok: false }),
       loadingOrders: false,
       loadingBookings: false,
     }

@@ -32,6 +32,10 @@ function canCancelOrder(order) {
   return ["PENDING", "ACCEPTED"].includes(order?.statusCode)
 }
 
+function canCancelBooking(booking) {
+  return booking?.statusCode === "PENDING"
+}
+
 function toNumber(value) {
   if (value == null || value === "") return null
   const numeric = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""))
@@ -202,15 +206,15 @@ export default function Profile() {
   })
   const [infoSaved,      setInfoSaved]      = useState("")
   const [infoError,      setInfoError]      = useState("")
-  const [pw,             setPw]             = useState({ current: "", next: "", confirm: "" })
-  const [pwErr,          setPwErr]          = useState({})
-  const [pwSaved,        setPwSaved]        = useState(false)
-  const [showPw,         setShowPw]         = useState(false)
   const [cancelTarget,   setCancelTarget]   = useState(null)
   const [selectedOrder,  setSelectedOrder]  = useState(null)
   const [cancelError,    setCancelError]    = useState("")
   const [cancelSuccess,  setCancelSuccess]  = useState("")
   const [cancelSubmitting, setCancelSubmitting] = useState(false)
+  const [bookingCancelTarget, setBookingCancelTarget] = useState(null)
+  const [bookingCancelError, setBookingCancelError] = useState("")
+  const [bookingCancelSuccess, setBookingCancelSuccess] = useState("")
+  const [bookingCancelSubmitting, setBookingCancelSubmitting] = useState(false)
 
   if (staff) return <Navigate to="/staff/dashboard" replace />
   if (resolvedToken && !isJwtTokenExpired(resolvedToken) && !resolvedUser) return null
@@ -223,22 +227,14 @@ export default function Profile() {
     setInfoSaved(result.message || ""); setTimeout(() => setInfoSaved(""), 2500)
   }
 
-  function savePw(e) {
-    e.preventDefault()
-    const errs = {}
-    if (!pw.current) errs.current = "Nhập mật khẩu hiện tại"
-    if (!pw.next || pw.next.length < 6) errs.next = "Tối thiểu 6 ký tự"
-    if (pw.next !== pw.confirm) errs.confirm = "Mật khẩu không khớp"
-    setPwErr(errs); if (Object.keys(errs).length) return
-    setPwSaved(true); setPw({ current: "", next: "", confirm: "" }); setTimeout(() => setPwSaved(false), 2000)
-  }
-
   function handleLogout() { auth.logout(); navigate("/") }
 
   function openCancelForm(order)  { setCancelTarget(order); setCancelError(""); setCancelSuccess("") }
   function closeCancelForm()      { setCancelTarget(null); setCancelError("") }
   function openOrderDetails(order){ setSelectedOrder(order) }
   function closeOrderDetails()    { setSelectedOrder(null) }
+  function openBookingCancelForm(booking) { setBookingCancelTarget(booking); setBookingCancelError(""); setBookingCancelSuccess("") }
+  function closeBookingCancelForm() { setBookingCancelTarget(null); setBookingCancelError("") }
 
   async function submitOrderCancel(e) {
     e.preventDefault(); if (!cancelTarget) return
@@ -249,6 +245,17 @@ export default function Profile() {
     setCancelSubmitting(false)
     if (!result.ok) { setCancelError(result.message || "Không thể hủy đơn hàng"); return }
     setCancelSuccess(result.message || ""); closeCancelForm()
+  }
+
+  async function submitBookingCancel(e) {
+    e.preventDefault(); if (!bookingCancelTarget) return
+    const numericId = Number(String(bookingCancelTarget.id).replace("#BK", ""))
+    if (!Number.isInteger(numericId) || numericId <= 0) { setBookingCancelError("Không xác định được đặt bàn cần hủy"); return }
+    setBookingCancelSubmitting(true); setBookingCancelError("")
+    const result = await auth.cancelBooking(numericId)
+    setBookingCancelSubmitting(false)
+    if (!result.ok) { setBookingCancelError(result.message || "Không thể hủy đặt bàn"); return }
+    setBookingCancelSuccess(result.message || ""); closeBookingCancelForm()
   }
 
   return (
@@ -264,7 +271,7 @@ export default function Profile() {
           </div>
         </div>
         <nav className="pf-nav">
-          {TABS.map(t => (
+          {TABS.filter(t => t.key !== "password").map(t => (
             <button key={t.key} className={`pf-nav-item ${activeTab === t.key ? "active" : ""}`} onClick={() => setActiveTab(t.key)}>
               <span className="pf-nav-icon">{t.icon}</span>{t.label}
               <span className="pf-nav-arrow">→</span>
@@ -308,41 +315,6 @@ export default function Profile() {
               {infoSaved && <p className="pf-success">{infoSaved}</p>}
               <div className="pf-form-footer">
                 <button type="submit" className={`pf-save-btn ${infoSaved ? "saved" : ""}`}>Lưu thay đổi</button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* PASSWORD */}
-        {activeTab === "password" && (
-          <div className="pf-section">
-            <div className="pf-section-header">
-              <h2 className="pf-section-title">Đổi mật khẩu</h2>
-              <p className="pf-section-sub">Phần này hiện vẫn đang ở giao diện mô phỏng</p>
-            </div>
-            <form className="pf-form" onSubmit={savePw}>
-              {[
-                { key: "current", label: "Mật khẩu hiện tại" },
-                { key: "next",    label: "Mật khẩu mới" },
-                { key: "confirm", label: "Xác nhận mật khẩu" },
-              ].map(f => (
-                <div className="pf-field" key={f.key}>
-                  <label>{f.label}</label>
-                  <div className="pf-pass-wrap">
-                    <input type={showPw ? "text" : "password"} placeholder="••••••••" value={pw[f.key]}
-                      onChange={e => { setPw(c => ({ ...c, [f.key]: e.target.value })); setPwErr(c => ({ ...c, [f.key]: "" })) }}
-                      className={pwErr[f.key] ? "err" : ""} />
-                    {f.key === "current" && (
-                      <button type="button" className="pf-eye" onClick={() => setShowPw(s => !s)}>{showPw ? "🙈" : "👁"}</button>
-                    )}
-                  </div>
-                  {pwErr[f.key] && <span className="pf-err">{pwErr[f.key]}</span>}
-                </div>
-              ))}
-              <div className="pf-form-footer">
-                <button type="submit" className={`pf-save-btn ${pwSaved ? "saved" : ""}`}>
-                  {pwSaved ? "✓ Đã đổi" : "Cập nhật mật khẩu"}
-                </button>
               </div>
             </form>
           </div>
@@ -432,11 +404,11 @@ export default function Profile() {
             <div className="pf-table-wrap">
               <table className="pf-table">
                 <thead>
-                  <tr><th>Mã đặt bàn</th><th>Ngày</th><th>Giờ</th><th>Số khách</th><th>Trạng thái</th></tr>
+                  <tr><th>Mã đặt bàn</th><th>Ngày</th><th>Giờ</th><th>Số khách</th><th>Trạng thái</th><th>Thao tác</th></tr>
                 </thead>
                 <tbody>
                   {auth.bookings.length === 0 ? (
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: 40, color: "#9ca3af", fontWeight: 300 }}>Chưa có đặt bàn nào</td></tr>
+                    <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "#9ca3af", fontWeight: 300 }}>Chưa có đặt bàn nào</td></tr>
                   ) : auth.bookings.map(b => (
                     <tr key={b.id}>
                       <td className="pf-td-id">{b.id}</td>
@@ -444,11 +416,37 @@ export default function Profile() {
                       <td>{b.time}</td>
                       <td>{b.guests} người</td>
                       <td><span className={`pf-status ${b.status === "Đã hủy" ? "cancelled" : "done"}`}>{b.status}</span></td>
+                      <td>
+                        {canCancelBooking(b)
+                          ? <button className="pf-inline-btn" onClick={() => openBookingCancelForm(b)}>Hủy đặt bàn</button>
+                          : <span className="pf-order-meta">{b.status === "Đã hủy" ? "Đã hủy" : "Không thể hủy"}</span>
+                        }
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {bookingCancelSuccess && <p className="pf-success">{bookingCancelSuccess}</p>}
+
+            {bookingCancelTarget && (
+              <form className="pf-cancel-box" onSubmit={submitBookingCancel}>
+                <div className="pf-cancel-head">
+                  <div>
+                    <h3>Huỷ đặt bàn {bookingCancelTarget.id}</h3>
+                    <p>Backend chỉ cho phép huỷ đặt bàn đang ở trạng thái chờ xác nhận.</p>
+                  </div>
+                  <button type="button" className="pf-inline-btn ghost" onClick={closeBookingCancelForm}>Đóng</button>
+                </div>
+                {bookingCancelError && <span className="pf-err">{bookingCancelError}</span>}
+                <div className="pf-form-footer">
+                  <button type="submit" className="pf-save-btn" disabled={bookingCancelSubmitting}>
+                    {bookingCancelSubmitting ? "Đang gửi..." : "Xác nhận huỷ đặt bàn"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
       </main>

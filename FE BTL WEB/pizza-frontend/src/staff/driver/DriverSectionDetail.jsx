@@ -115,6 +115,7 @@ export default function DriverSectionDetail({ section, isDriverMode, onBack }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
 
   async function loadSectionOrders() {
     try {
@@ -181,9 +182,10 @@ export default function DriverSectionDetail({ section, isDriverMode, onBack }) {
   async function handleClaim(orderId) {
     try {
       const numericId = Number(String(orderId).replace("#4P", ""))
-      await claimDriverOrderApi(numericId)
+      const responseMessage = await claimDriverOrderApi(numericId)
       await loadSectionOrders()
       setError("")
+      setNotice(typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "claim success")
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, "Không thể nhận đơn"))
     }
@@ -192,9 +194,10 @@ export default function DriverSectionDetail({ section, isDriverMode, onBack }) {
   async function handleFinish(orderId, status) {
     try {
       const numericId = Number(String(orderId).replace("#4P", ""))
-      await completeDriverOrderApi(numericId, status)
+      const responseMessage = await completeDriverOrderApi(numericId, status)
       await loadSectionOrders()
       setError("")
+      setNotice(typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "update success")
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, "Không thể cập nhật giao hàng"))
     }
@@ -226,6 +229,7 @@ export default function DriverSectionDetail({ section, isDriverMode, onBack }) {
       </div>
 
       {error ? <p className="co-err">{error}</p> : null}
+      {notice ? <p className="pf-success">{notice}</p> : null}
 
       {loading ? (
         <div className="smd-section-state">

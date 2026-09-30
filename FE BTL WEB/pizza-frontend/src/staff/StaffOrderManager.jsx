@@ -112,6 +112,7 @@ export default function StaffOrderManager() {
   const [filterStatus, setFilterStatus] = useState("Tất cả")
   const [search, setSearch] = useState("")
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [dateFilters, setDateFilters] = useState(createDefaultDateFilters)
@@ -173,7 +174,7 @@ export default function StaffOrderManager() {
   async function updateStatus(id, newStatus) {
     try {
       const numericId = Number(String(id).replace("#4P", ""))
-      await updateStaffOrderStatusApi(numericId, newStatus)
+      const responseMessage = await updateStaffOrderStatusApi(numericId, newStatus)
       setOrders(current =>
         current.map(order =>
           order.id === id
@@ -201,6 +202,7 @@ export default function StaffOrderManager() {
         )
       )
       setError("")
+      setNotice(typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "Cap nhat thanh cong")
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, "Không thể cập nhật trạng thái đơn"))
     }
@@ -312,6 +314,7 @@ export default function StaffOrderManager() {
         </div>
       </div>
       {error && <p className="co-err">{error}</p>}
+      {notice && <p className="pf-success">{notice}</p>}
 
       <div className="sm-table-wrap">
         <table className="sm-table">

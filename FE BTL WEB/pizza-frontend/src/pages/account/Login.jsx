@@ -1,21 +1,13 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
+import { getApiErrorMessage } from "../../services/apiClient"
 import { decodeJwtToken, isJwtTokenExpired } from "../../services/jwt"
 import { normalizeUserResponse } from "../../services/responseAdapters"
 import { useStaff } from "../../staff/StaffContext"
 import "./Login.css"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8082"
-
-function normalizeLoginMessage(message) {
-  const normalized = String(message || "").trim()
-  if (!normalized) return ""
-  if (normalized.toLowerCase() === "bad credentials") {
-    return "sai tên đăng nhập hoặc mật khẩu"
-  }
-  return normalized
-}
 
 export default function Login() {
   const navigate = useNavigate()
@@ -63,16 +55,16 @@ export default function Login() {
     const nextErrors = {}
 
     if (mode === "register") {
-      if (!form.name.trim()) nextErrors.name = "Vui long nhap ho ten"
-      if (!form.username.trim()) nextErrors.username = "Vui long nhap ten dang nhap"
-      if (!form.phone.trim()) nextErrors.phone = "Vui long nhap so dien thoai"
-      if (!form.address.trim()) nextErrors.address = "Vui long nhap dia chi"
-      if (!form.gender) nextErrors.gender = "Vui long chon gioi tinh"
-      if (!form.password || form.password.length < 6) nextErrors.password = "Mat khau toi thieu 6 ky tu"
-      if (form.password !== form.confirm) nextErrors.confirm = "Mat khau khong khop"
+      if (!form.name.trim()) nextErrors.name = "Vui lòng nhập họ và tên"
+      if (!form.username.trim()) nextErrors.username = "Vui lòng nhập tên đăng nhập"
+      if (!form.phone.trim()) nextErrors.phone = "Vui lòng nhập số điện thoại"
+      if (!form.address.trim()) nextErrors.address = "Vui lòng nhập địa chỉ"
+      if (!form.gender) nextErrors.gender = "Vui lòng chọn giới tính"
+      if (!form.password || form.password.length < 6) nextErrors.password = "Mật khẩu tối thiểu 6 ký tự"
+      if (form.password !== form.confirm) nextErrors.confirm = "Mật khẩu không khớp"
     } else {
-      if (!form.identifier.trim()) nextErrors.identifier = "Nhap ten dang nhap"
-      if (!form.password) nextErrors.password = "Nhap mat khau"
+      if (!form.identifier.trim()) nextErrors.identifier = "Nhập tên đăng nhập."
+      if (!form.password) nextErrors.password = "Nhập mật khẩu"
     }
 
     setErrors(nextErrors)
@@ -159,7 +151,7 @@ async function inferRoleAfterLogin(identifier, token) {
 
     const loginText = await loginResponse.text()
     if (!loginResponse.ok) {
-      throw new Error(normalizeLoginMessage(loginText) || "Tai khoan khong hop le.")
+      throw new Error(getApiErrorMessage({ response: { data: loginText } }, "sai tên đăng nhập hoặc mật khẩu"))
     }
 
     const nextToken = loginText.trim().replace(/^"|"$/g, "")
@@ -207,7 +199,7 @@ async function inferRoleAfterLogin(identifier, token) {
       })
       setLoading(false)
       if (!result.ok) {
-        setErrors(prev => ({ ...prev, submit: result.message || "Khong the tao tai khoan" }))
+        setErrors(prev => ({ ...prev, submit: result.message || "Không thể tạo tài khoản" }))
         return
       }
       redirectTo("/profile")
@@ -223,14 +215,14 @@ async function inferRoleAfterLogin(identifier, token) {
     } catch (error) {
       loginResult = {
         ok: false,
-        message: normalizeLoginMessage(error?.message) || "Tai khoan khong hop le.",
+        message: error?.message || "sai tên đăng nhập hoặc mật khẩu",
       }
     }
     setLoading(false)
     if (!loginResult.ok) {
       setErrors(prev => ({
         ...prev,
-        submit: loginResult.message || "Tai khoan khong hop le.",
+        submit: loginResult.message || "sai tên đăng nhập hoặc mật khẩu",
       }))
       return
     }
@@ -444,7 +436,7 @@ async function inferRoleAfterLogin(identifier, token) {
           </form>
 
           <div className="ln-switch">
-            <span>Dang nhap staff/driver hien duoc dong bo theo role backend.</span>
+            <span></span>
           </div>
 
           {mode === "register" ? (

@@ -115,7 +115,7 @@ function Navbar() {
                             </div>
                           </div>
                           <div className="nav-dd-divider" />
-                          {dropdownItems.map(item => (
+                          {dropdownItems.filter(item => item.path !== "/profile?tab=password").map(item => (
                             <button key={item.label} className="nav-dd-item" onClick={() => goTo(item.path)}>
                               <span className="nav-dd-icon">{item.icon}</span>
                               {item.label}

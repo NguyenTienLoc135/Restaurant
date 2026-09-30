@@ -2,6 +2,7 @@
 import { MENU_CATEGORIES, MENU_STATUS } from "../data/menuData"
 import {
   createStaffItemApi,
+  fetchPublicItemDetailApi,
   deleteStaffItemApi,
   fetchPublicItemsApi,
   fetchStaffItemsApi,
@@ -18,6 +19,27 @@ function normalizeSearchText(value) {
 
 function toAvailabilityString(status) {
   return status === MENU_STATUS.available ? "true" : "false"
+}
+
+async function hydrateMenuDescriptions(items) {
+  const hydrated = await Promise.all(
+    items.map(async item => {
+      if (!item?.id || (item.desc && item.unit)) return item
+
+      try {
+        const detail = await fetchPublicItemDetailApi(item.id)
+        return {
+          ...item,
+          desc: detail?.description || item.desc || "",
+          unit: detail?.unit || item.unit || "",
+        }
+      } catch {
+        return item
+      }
+    })
+  )
+
+  return hydrated
 }
 
 export function searchMenuItems(items, builder = {}) {
@@ -68,7 +90,7 @@ export function MenuProvider({ children }) {
       try {
         setLoading(true)
         const apiItems = await fetchPublicItemsApi()
-        const normalized = normalizeMenuList(apiItems)
+        const normalized = await hydrateMenuDescriptions(normalizeMenuList(apiItems))
         setItems(normalized)
         setIsBackendSynced(true)
         setError("")
@@ -86,33 +108,49 @@ export function MenuProvider({ children }) {
 
   async function refreshFromStaffApi() {
     const apiItems = await fetchStaffItemsApi()
-    const normalized = normalizeMenuList(apiItems)
+    const normalized = await hydrateMenuDescriptions(normalizeMenuList(apiItems))
     setItems(normalized)
     setIsBackendSynced(true)
     return normalized
   }
 
   async function createItem(data) {
-    await createStaffItemApi(data)
-    return refreshFromStaffApi()
+    const responseMessage = await createStaffItemApi(data)
+    const items = await refreshFromStaffApi()
+    return {
+      items,
+      message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "thêm món thành công",
+    }
   }
 
   async function updateItem(id, changes) {
-    await updateStaffItemApi(id, changes)
-    return refreshFromStaffApi()
+    const responseMessage = await updateStaffItemApi(id, changes)
+    const items = await refreshFromStaffApi()
+    return {
+      items,
+      message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "cập nhật món thành công",
+    }
   }
 
   async function deleteItem(id) {
-    await deleteStaffItemApi(id)
-    return refreshFromStaffApi()
+    const responseMessage = await deleteStaffItemApi(id)
+    const items = await refreshFromStaffApi()
+    return {
+      items,
+      message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "xóa món thành công",
+    }
   }
 
   async function toggleItemStatus(id) {
     const current = items.find(item => item.id === id)
     if (!current) return []
     const nextStatus = current.status === MENU_STATUS.available ? MENU_STATUS.outOfStock : MENU_STATUS.available
-    await updateStaffItemApi(id, { ...current, status: nextStatus })
-    return refreshFromStaffApi()
+    const responseMessage = await updateStaffItemApi(id, { ...current, status: nextStatus })
+    const items = await refreshFromStaffApi()
+    return {
+      items,
+      message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "cập nhật món thành công",
+    }
   }
 
   const value = useMemo(() => {
@@ -135,7 +173,7 @@ export function MenuProvider({ children }) {
       searchItems: searchBuilder => searchMenuItems(normalizedItems, searchBuilder),
       refreshItems: async builder => {
         const apiItems = await fetchPublicItemsApi(builder)
-        const normalized = normalizeMenuList(apiItems)
+        const normalized = await hydrateMenuDescriptions(normalizeMenuList(apiItems))
         setItems(normalized)
         setIsBackendSynced(true)
         return normalized

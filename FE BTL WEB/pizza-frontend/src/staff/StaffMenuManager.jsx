@@ -14,14 +14,14 @@ const BLANK = {
 }
 
 export default function StaffMenuManager() {
-  const { items, categories, createItem, updateItem, deleteItem, toggleItemStatus } = useMenu()
+  const { items, categories, createItem, updateItem } = useMenu()
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(BLANK)
   const [filterCat, setFilterCat] = useState("all")
-  const [confirmDel, setConfirmDel] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState("")
   const [uploadNotice, setUploadNotice] = useState("")
+  const [actionNotice, setActionNotice] = useState("")
   const [submitError, setSubmitError] = useState("")
 
   const cloudinaryReady = isCloudinaryConfigured()
@@ -34,6 +34,7 @@ export default function StaffMenuManager() {
     setForm(BLANK)
     setUploadError("")
     setUploadNotice("")
+    setActionNotice("")
     setSubmitError("")
     setModal("add")
   }
@@ -51,6 +52,7 @@ export default function StaffMenuManager() {
     })
     setUploadError("")
     setUploadNotice("")
+    setActionNotice("")
     setSubmitError("")
     setModal("edit")
   }
@@ -60,6 +62,7 @@ export default function StaffMenuManager() {
     setUploading(false)
     setUploadError("")
     setUploadNotice("")
+    setActionNotice("")
     setSubmitError("")
   }
 
@@ -78,9 +81,9 @@ export default function StaffMenuManager() {
     const payload = { ...form }
 
     try {
-      if (modal === "add") await createItem(payload)
-      else await updateItem(form.id, payload)
+      const result = modal === "add" ? await createItem(payload) : await updateItem(form.id, payload)
       closeModal()
+      setActionNotice(result?.message || "")
     } catch (error) {
       setSubmitError(error?.response?.data || error?.message || "Không thể lưu món")
     }
@@ -156,6 +159,7 @@ export default function StaffMenuManager() {
           ))}
         </div>
       </div>
+      {actionNotice && <p className="pf-success">{actionNotice}</p>}
 
       <div className="smm-grid">
         {displayed.map(item => (
@@ -170,21 +174,10 @@ export default function StaffMenuManager() {
               <span className="smm-cat">{categories.find(category => category.key === item.cat)?.label || item.cat}</span>
               <h3 className="smm-name">{item.name}</h3>
               <p className="smm-price">{Number(item.price).toLocaleString("vi-VN")}₫</p>
-              <p style={{ color: "#6b7280", lineHeight: 1.5, marginTop: 8 }}>{item.desc}</p>
+              <p className="smm-desc">{item.desc}</p>
             </div>
             <div className="smm-actions">
               <button className="sm-btn sm-btn-sm outline" onClick={() => openEdit(item)}>Sửa</button>
-              <button
-                className={`sm-btn sm-btn-sm ${item.status === MENU_STATUS.available ? "danger" : "outline"}`}
-                onClick={async () => {
-                  try {
-                    await toggleItemStatus(item.id)
-                  } catch {}
-                }}
-              >
-                {item.status === MENU_STATUS.available ? "Hết món" : "Có sẵn"}
-              </button>
-              <button className="sm-btn sm-btn-sm danger" onClick={() => setConfirmDel(item)}>Xóa</button>
             </div>
           </div>
         ))}
@@ -279,36 +272,6 @@ export default function StaffMenuManager() {
         </div>
       )}
 
-      {confirmDel && (
-        <div className="sm-modal-back">
-          <div className="sm-modal" style={{ maxWidth: 400 }}>
-            <div className="sm-modal-header">
-              <h3 className="sm-modal-title">Xác nhận xóa</h3>
-              <button className="sm-modal-close" onClick={() => setConfirmDel(null)}>✕</button>
-            </div>
-            <div className="sm-modal-body">
-              <p style={{ color: "#374151", lineHeight: 1.7 }}>
-                Xóa món <strong>{confirmDel.name}</strong> sẽ làm món này biến mất ngay khỏi web user.
-              </p>
-            </div>
-            <div className="sm-modal-footer">
-              <button className="sm-btn outline" onClick={() => setConfirmDel(null)}>Hủy</button>
-              <button
-                className="sm-btn danger"
-                onClick={async () => {
-                  try {
-                    await deleteItem(confirmDel.id)
-                  } finally {
-                    setConfirmDel(null)
-                  }
-                }}
-              >
-                Xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

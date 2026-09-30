@@ -38,6 +38,15 @@ function normalizeBackendMessage(message) {
   if (normalized.toLowerCase() === "bad credentials") {
     return "sai tên đăng nhập hoặc mật khẩu"
   }
+  if (normalized.includes("users.uk_users_phone")) {
+    return "Phone number already exists"
+  }
+  if (normalized.includes("users.uk_users_username")) {
+    return "Username already exists"
+  }
+  if (normalized.includes("users.uk_users_email")) {
+    return "Email already exists"
+  }
   return normalized
 }
 

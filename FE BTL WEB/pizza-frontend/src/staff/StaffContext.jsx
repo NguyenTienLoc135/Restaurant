@@ -107,7 +107,7 @@ export function StaffProvider({ children }) {
       return { ok: true, staff: safeStaff, token: nextToken }
     } catch (error) {
       clearStaffSessionStorage()
-      return { ok: false, message: getApiErrorMessage(error, "Không thể đăng nhập staff") }
+      return { ok: false, message: getApiErrorMessage(error, "sai tên đăng nhập hoặc mật khẩu") }
     }
   }
 
@@ -136,10 +136,10 @@ export function StaffProvider({ children }) {
       return {
         ok: true,
         staff: safeStaff,
-        message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "",
+        message: typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "Cập nhật thông tin thành công",
       }
     } catch (error) {
-      return { ok: false, message: getApiErrorMessage(error, "Không thể cập nhật staff") }
+      return { ok: false, message: getApiErrorMessage(error, "Không thể cập nhật thông tin") }
     }
   }
 

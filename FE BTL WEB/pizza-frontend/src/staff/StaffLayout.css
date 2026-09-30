@@ -474,6 +474,8 @@
   border: 1px solid var(--s-border);
   overflow: hidden;
   transition: box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 .smm-card:hover { box-shadow: 0 8px 28px rgba(15,32,68,0.1); transform: translateY(-2px); }
 .smm-card.out { opacity: 0.6; }
@@ -495,15 +497,36 @@
 .smm-status-badge.green { background: rgba(22,163,74,0.9); color: white; }
 .smm-status-badge.red   { background: rgba(239,68,68,0.9); color: white; }
 
-.smm-body { padding: 14px 16px 10px; }
+.smm-body {
+  padding: 14px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 160px;
+}
 .smm-cat { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--s-gold); display: block; margin-bottom: 4px; }
 .smm-name { font-family: "Cormorant Garamond", serif; font-size: 18px; font-weight: 500; color: var(--s-navy); margin-bottom: 4px; line-height: 1.2; }
 .smm-price { font-family: "Cormorant Garamond", serif; font-size: 16px; font-weight: 600; color: var(--s-navy); }
+.smm-desc {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-top: 8px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 76px;
+}
 
 .smm-actions {
-  display: flex; gap: 6px; padding: 0 12px 14px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 12px 14px;
+  margin-top: auto;
 }
+.smm-actions .sm-btn-sm { width: 100%; justify-content: center; }
 
 .smm-preview {
   width: 100%; height: 120px; overflow: hidden; border: 1px solid var(--s-border);

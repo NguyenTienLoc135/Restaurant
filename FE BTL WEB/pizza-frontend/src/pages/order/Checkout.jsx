@@ -41,6 +41,7 @@ export default function Checkout() {
   const [payment, setPayment] = useState("cod")
   const [notes, setNotes] = useState("")
   const [success, setSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState("")
 
@@ -133,6 +134,7 @@ export default function Checkout() {
       return
     }
 
+    setSuccessMessage(result.message || "Don hang cua ban da duoc tao va dang cho duyet.")
     setSuccess(true)
     setTimeout(() => {
       clearCart()
@@ -279,6 +281,7 @@ export default function Checkout() {
             <div className="co-success-icon">🛵</div>
             <h2>Đặt hàng thành công!</h2>
             <p>Đơn hàng của bạn đang được chuẩn bị.<br />Shipper sẽ đến trong <strong>30-45 phút</strong>.</p>
+            {successMessage ? <p>{successMessage}</p> : null}
             <div className="co-success-bar" />
           </div>
         </div>

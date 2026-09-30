@@ -11,6 +11,7 @@ import com.javaweb.service.OrderDetailService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.javaweb.enums.ItemAvailable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -26,15 +27,15 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     @Override
     public List<OrderDetail> buildDetails(List<OrderDetailRequest> items, Order order) {
         if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("danh sach mon khong duoc de trong");
+            throw new IllegalArgumentException("danh sách món không được để trống");
         }
         List<OrderDetail> details = new ArrayList<>();
         for (OrderDetailRequest d : items) {
             Item item = itemRepository.findById(d.getId())
-                    .orElseThrow(() -> new DataNotFoundException("khong tim thay mon"));
-            /*if (item.getIsAvailable() == ItemAvailable.UNAVAILABLE) {
-                throw new ItemUnavailableException("mon khong con");
-            }*/
+                    .orElseThrow(() -> new DataNotFoundException("không tìm thấy món"));
+            if (item.getIsAvailable() == ItemAvailable.UNAVAILABLE) {
+                throw new DataNotFoundException("món không còn");
+            }
             OrderDetail od = new OrderDetail();
             od.setOrder(order);
             od.setItem(item);

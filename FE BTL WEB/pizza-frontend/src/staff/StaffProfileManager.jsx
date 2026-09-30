@@ -127,13 +127,6 @@ export default function StaffProfileManager() {
             </div>
           </form>
         </section>
-
-        <section className="ssp-card ssp-card-wide">
-          <div className="ssp-section-head">
-            <h2>Đổi mật khẩu</h2>
-            <p>Backend hiện chưa có endpoint đổi mật khẩu cho staff/driver, nên FE không hiển thị form đổi mật khẩu nữa để tránh lệch hành vi thực tế.</p>
-          </div>
-        </section>
       </div>
     </div>
   )

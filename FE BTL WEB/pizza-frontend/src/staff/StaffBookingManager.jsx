@@ -97,6 +97,7 @@ export default function StaffBookingManager() {
   const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState("Tất cả")
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
   const [dateFilters, setDateFilters] = useState(createDefaultDateFilters)
   const [appliedDateFilters, setAppliedDateFilters] = useState(createDefaultDateFilters)
 
@@ -167,7 +168,7 @@ export default function StaffBookingManager() {
         return
       }
 
-      await updateStaffBookingStatusApi(numericId, newStatus)
+      const responseMessage = await updateStaffBookingStatusApi(numericId, newStatus)
       setBookings(current =>
         current.map(booking =>
           booking.id === id
@@ -185,6 +186,7 @@ export default function StaffBookingManager() {
         )
       )
       setError("")
+      setNotice(typeof responseMessage === "string" && responseMessage.trim() ? responseMessage : "updated")
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, "Không thể cập nhật trạng thái booking"))
     }
@@ -246,6 +248,7 @@ export default function StaffBookingManager() {
         </div>
       </div>
       {error && <p className="co-err">{error}</p>}
+      {notice && <p className="pf-success">{notice}</p>}
 
       <div className="sm-table-wrap">
         <table className="sm-table">

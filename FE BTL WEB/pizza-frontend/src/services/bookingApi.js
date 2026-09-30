@@ -19,3 +19,8 @@ export async function getMyBookingsApi(token) {
   const response = await apiClient.get("/user/user/reservation/me", withAuthConfig(token))
   return response.data
 }
+
+export async function cancelMyBookingApi(id, token) {
+  const response = await apiClient.delete(`/user/booking/me/${id}`, withAuthConfig(token))
+  return response.data
+}

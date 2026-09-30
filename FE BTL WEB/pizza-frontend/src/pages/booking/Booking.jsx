@@ -4,6 +4,16 @@ import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from "../../context/AuthContext"
 import "./Booking.css"
 
+function toLocalDateTimeString(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  const seconds = String(date.getSeconds()).padStart(2, "0")
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
 function LocationCard({ restaurant }) {
   const [showMap, setShowMap] = useState(false)
   const closeTimeoutRef = useRef(null)
@@ -96,6 +106,7 @@ function Booking() {
   const [phone, setPhone] = useState(user?.phone || "")
   const [notify, setNotify] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
   const [cancelled, setCancelled] = useState(false)
   const [submitError, setSubmitError] = useState("")
 
@@ -176,7 +187,7 @@ function Booking() {
     bookingDate.setHours(Number(dateParts[0] || 0), Number(dateParts[1] || 0), 0, 0)
 
     const result = await addBooking({
-      bookingDate: bookingDate.toISOString().slice(0, 19),
+      bookingDate: toLocalDateTimeString(bookingDate),
       date: date.toLocaleDateString("vi-VN"),
       time: time || "--:--",
       guests: Number(people),
@@ -194,6 +205,7 @@ function Booking() {
 
     clearInterval(timerRef.current)
     setCountdownActive(false)
+    setSuccessMessage(result.message || "Dat ban thanh cong.")
     setSuccess(true)
 
     setTimeout(() => {
@@ -366,6 +378,7 @@ function Booking() {
       {success && (
         <div className="success-overlay">
           <div className="success-box">
+            {successMessage ? <p>{successMessage}</p> : null}
             <div className="success-check">✓</div>
             <h2>Đặt bàn thành công!</h2>
             <p>Chúng tôi sẽ liên hệ xác nhận sớm nhất.</p>
