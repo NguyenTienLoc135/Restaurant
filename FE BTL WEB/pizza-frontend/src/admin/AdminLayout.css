@@ -1,0 +1,54 @@
+.adm-page {
+  min-height: 100vh;
+  background: var(--s-bg);
+  font-family: "DM Sans", sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-brand-tag {
+  color: #fff6d8;
+  background: rgba(184, 132, 33, 0.28);
+}
+
+.adm-nav-item.active::before {
+  background: #b88421;
+}
+
+.adm-form-card {
+  background: white;
+  border: 1px solid var(--s-border);
+  padding: 28px;
+  max-width: 920px;
+}
+
+.adm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.adm-message {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.adm-message.success {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.18);
+  color: #15803d;
+}
+
+.adm-message.error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.18);
+  color: #b91c1c;
+}
+
+.adm-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,29 +1,28 @@
 package com.javaweb.service.impl;
-import com.javaweb.customExceptions.DataNotFoundException;
+
 import com.javaweb.customExceptions.ConflictException;
+import com.javaweb.customExceptions.DataNotFoundException;
 import com.javaweb.entity.User;
 import com.javaweb.enums.UserIsActive;
-import com.javaweb.model.request.UserRequest;
 import com.javaweb.model.request.UserLoginRequest;
+import com.javaweb.model.request.UserRequest;
 import com.javaweb.model.request.UserUpdateRequest;
 import com.javaweb.model.response.UserResponse;
+import com.javaweb.repository.UserRepository;
 import com.javaweb.security.CurrentUserProvider;
 import com.javaweb.service.UserService;
 import com.javaweb.utils.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.boot.context.config.ConfigDataNotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.javaweb.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +30,8 @@ import java.util.List;
 import static com.javaweb.enums.UserIsActive.ACTIVE;
 import static com.javaweb.enums.UserIsActive.INACTIVE;
 import static com.javaweb.enums.UserRole.CUSTOMER;
+import static com.javaweb.enums.UserRole.DRIVER;
+import static com.javaweb.enums.UserRole.STAFF;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public String login(UserLoginRequest userLoginRequest){
+    public String login(UserLoginRequest userLoginRequest) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         userLoginRequest.getUsername(),
@@ -53,38 +54,36 @@ public class UserServiceImpl implements UserService {
                 )
         );
         var user = userRepository.findByUsername(userLoginRequest.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("sai tên đăng nhập hoặc mật khẩu"));
-        if(user.getUserIsActive().equals(INACTIVE)){
-            throw new DisabledException(" tài khoản không hoạt động");
+                .orElseThrow(() -> new BadCredentialsException("sai tÃƒÂªn Ã„â€˜Ã„Æ’ng nháº­p hoáº·c máº­t kháº©u"));
+        if (user.getUserIsActive().equals(INACTIVE)) {
+            throw new DisabledException(" tÃƒÂ i khoáº£n khÃƒÂ´ng hoáº¡t Ã„â€˜á»™ng");
         }
-        var token = jwtTokenProvider.generateToken(user);
-        return token;
+        return jwtTokenProvider.generateToken(user);
     }
 
     @Transactional
     @Override
-    public String Register(UserRequest userRegisterRequest) {
+    public String register(UserRequest userRegisterRequest) {
         try {
-            Long n = Long.parseLong(userRegisterRequest.getPhone());
+            Long.parseLong(userRegisterRequest.getPhone());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡ ");
         }
-        catch(Exception e) {
-            throw new IllegalArgumentException("số điện thoại không hợp lệ ");
+        if (userRegisterRequest.getPhone().length() != 10) {
+            throw new IllegalArgumentException(" sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡ ");
         }
-        if(userRegisterRequest.getPhone().length() != 10) {
-            throw new IllegalArgumentException(" số điện thoại không hợp lệ ");
+        if (userRegisterRequest.getPassword().length() < 6) {
+            throw new IllegalArgumentException(" máº­t kháº©u pháº£i lá»›n hÆ¡n 6 chá»¯ sá»‘ ");
         }
-        if(userRegisterRequest.getPassword().length() < 6) {
-            throw new IllegalArgumentException(" mật khẩu phải lớn hơn 6 chữ số ");
-        }
-        if(userRepository.existsByPhone(userRegisterRequest.getPhone())) {
+        if (userRepository.existsByPhone(userRegisterRequest.getPhone())) {
             throw new ConflictException("Phone number already exists");
         }
-        if(userRepository.existsByUsername(userRegisterRequest.getUsername())) {
+        if (userRepository.existsByUsername(userRegisterRequest.getUsername())) {
             throw new ConflictException("Username already exists");
         }
         User user = modelMapper.map(userRegisterRequest, User.class);
-        user.setPassword(passwordEncoder.encode(userRegisterRequest.getPassword()));// mã hóa password
-        if(user.getUserRole() == null ) {
+        user.setPassword(passwordEncoder.encode(userRegisterRequest.getPassword()));
+        if(user.getUserRole()==null){
             user.setUserRole(CUSTOMER);
         }
         user.setUserIsActive(ACTIVE);
@@ -93,21 +92,72 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @Override
-    public List<UserResponse> findAll(){
+    public String registerStaff(UserRequest userRegisterRequest) {
+        if (userRegisterRequest.getUserRole() == null
+                || (!STAFF.equals(userRegisterRequest.getUserRole()) && !DRIVER.equals(userRegisterRequest.getUserRole()))) {
+            throw new IllegalArgumentException("chi duoc tao tai khoan STAFF hoac DRIVER");
+        }
+        try {
+            Long.parseLong(userRegisterRequest.getPhone());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡ ");
+        }
+        if (userRegisterRequest.getPhone().length() != 10) {
+            throw new IllegalArgumentException(" sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡ ");
+        }
+        if (userRegisterRequest.getPassword().length() < 6) {
+            throw new IllegalArgumentException(" máº­t kháº©u pháº£i lá»›n hÆ¡n 6 chá»¯ sá»‘ ");
+        }
+        if (userRepository.existsByPhone(userRegisterRequest.getPhone())) {
+            throw new ConflictException("Phone number already exists");
+        }
+        if (userRepository.existsByUsername(userRegisterRequest.getUsername())) {
+            throw new ConflictException("Username already exists");
+        }
+        User user = modelMapper.map(userRegisterRequest, User.class);
+        user.setPassword(passwordEncoder.encode(userRegisterRequest.getPassword()));
+        user.setUserRole(userRegisterRequest.getUserRole());
+        user.setUserIsActive(ACTIVE);
+        userRepository.save(user);
+        return "ok";
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
+    @Override
+    public List<UserResponse> findAll() {
         List<User> users = userRepository.findAll();
+        return mapToUserResponses(users);
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Override
+    public List<UserResponse> findAllStaff() {
+        return mapToUserResponses(userRepository.findByUserRole(STAFF));
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Override
+    public List<UserResponse> findAllDriver() {
+        return mapToUserResponses(userRepository.findByUserRole(DRIVER));
+    }
+
+    private List<UserResponse> mapToUserResponses(List<User> users) {
         List<UserResponse> userResponseList = new ArrayList<>();
-        for(User user : users){
+        for (User user : users) {
             userResponseList.add(modelMapper.map(user, UserResponse.class));
         }
         return userResponseList;
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     @Override
-    public String banUser(Integer id, UserIsActive userIsActive){
+    public String banUser(Integer id, UserIsActive userIsActive) {
         User user = userRepository.findById(id).orElseThrow();
         user.setUserIsActive(userIsActive);
         userRepository.save(user);
@@ -115,26 +165,25 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER','ROLE_ADMIN')")
     @Override
-    public UserResponse showInfo(){
+    public UserResponse showInfo() {
         Integer id = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AccessDeniedException("forbidden"));
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("không tìm thấy người dùng"));
-        UserResponse userResponse = modelMapper.map(user, UserResponse.class);
-        return userResponse;
+                .orElseThrow(() -> new DataNotFoundException("khÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
+        return modelMapper.map(user, UserResponse.class);
     }
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER','ROLE_ADMIN')")
     @Override
-    public String updateMyInfo(UserUpdateRequest req){
+    public String updateMyInfo(UserUpdateRequest req) {
         Integer id = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AccessDeniedException("forbidden"));
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("không tìm thấy người dùng"));
+                .orElseThrow(() -> new DataNotFoundException("khÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
 
         if (req.getFullname() != null) user.setFullname(req.getFullname());
         if (req.getPhone() != null) user.setPhone(req.getPhone());
@@ -142,8 +191,6 @@ public class UserServiceImpl implements UserService {
         if (req.getGender() != null) user.setUserGender(req.getGender());
 
         userRepository.save(user);
-        return "Cập nhật thông tin thành công";
+        return "Cáº­p nháº­t thÃ´ng tin thÃ nh cÃ´ng";
     }
-
 }
-

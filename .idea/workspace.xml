@@ -5,8 +5,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5b795571-dd66-4115-b1b0-78df7cdb6b02" name="Changes" comment="Initial commit">
+      <change afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/admin/StaffManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.vscode/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/.vscode/settings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/App.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/components/Navbar.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/components/Navbar.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/pages/account/Login.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/pages/account/Login.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/pages/account/Profile.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/pages/account/Profile.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/services/apiClient.js" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/services/apiClient.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffContext.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffContext.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffCustomerManager.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffCustomerManager.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffLayout.css" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffLayout.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE BTL WEB/pizza-frontend/src/staff/StaffLayout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HashPw.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/mvnw.cmd" beforeDir="false" afterPath="$PROJECT_DIR$/demo/mvnw.cmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/demo/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/PublicController.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/PublicController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/BookingManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/api/staff/BookingManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/config/WebSecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/entity/Order.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/entity/Order.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/enums/UserRole.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/enums/UserRole.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/repository/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/OrderService.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/OrderService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/ReservationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/ReservationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/DeliveryServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/DeliveryServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ItemServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ItemServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderDetailServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderDetailServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/OrderServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ReservationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/ReservationServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/demo/src/main/java/com/javaweb/service/impl/UserServiceImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,20 +64,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.DemoApplication.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Administrator/Documents/intelij&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;inlay.hints&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.DemoApplication.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/Administrator/Documents/intelij",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "reference.settings.project.maven.runner",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
       <recent name="com.javaweb" />
@@ -57,17 +91,6 @@
     </key>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="intelij" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="intelij" />
-      <option name="filePath" />
-      <method v="2" />
-    </configuration>
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="intelij" />
       <option name="ENV_FILES" value="" />
@@ -102,6 +125,17 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <method v="2" />
     </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="intelij" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="intelij" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -117,6 +151,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1767453214419</updated>
+      <workItem from="1776156932143" duration="10000" />
+      <workItem from="1776156960017" duration="15000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />

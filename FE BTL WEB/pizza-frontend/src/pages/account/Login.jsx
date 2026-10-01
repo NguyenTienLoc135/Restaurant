@@ -32,12 +32,23 @@ export default function Login() {
 
   const storedStaffToken = localStorage.getItem("hs_staff_token")
   const storedUserToken = localStorage.getItem("hs_user_token")
+  const storedStaffPayload = storedStaffToken ? decodeJwtToken(storedStaffToken) : null
+  const storedUserPayload = storedUserToken ? decodeJwtToken(storedUserToken) : null
+  const storedStaffRole = normalizeAppRole(
+    staff?.role || storedStaffPayload?.role || storedStaffPayload?.userRole
+  )
+  const storedUserRole = normalizeAppRole(
+    user?.role || user?.userRole || storedUserPayload?.role || storedUserPayload?.userRole
+  )
 
   if (staff || (storedStaffToken && !isJwtTokenExpired(storedStaffToken))) {
-    return <Navigate to="/staff/dashboard" replace />
+    return <Navigate to={storedStaffRole === "admin" ? "/admin/dashboard" : "/staff/dashboard"} replace />
   }
 
   if (user || (storedUserToken && !isJwtTokenExpired(storedUserToken))) {
+    if (storedUserRole === "admin" || storedUserRole === "staff" || storedUserRole === "driver") {
+      return <Navigate to={storedUserRole === "admin" ? "/admin/dashboard" : "/staff/dashboard"} replace />
+    }
     return <Navigate to="/" replace />
   }
 
@@ -110,6 +121,7 @@ function buildAuthHeaders(token) {
 
 function normalizeAppRole(role) {
   const normalized = String(role || "").trim().toUpperCase()
+  if (normalized === "ADMIN") return "admin"
   if (normalized === "STAFF") return "staff"
   if (normalized === "DRIVER") return "driver"
   return "customer"
@@ -127,6 +139,10 @@ async function canAccess(url, token) {
 }
 
 async function inferRoleAfterLogin(identifier, token) {
+  if (await canAccess(`${API_BASE_URL}/admin/staffs`, token)) {
+    return "admin"
+  }
+
   if (await canAccess(`${API_BASE_URL}/staff/users`, token)) {
     return "staff"
   }
@@ -228,11 +244,11 @@ async function inferRoleAfterLogin(identifier, token) {
     }
 
     const nextRole = String(loginResult.user?.role || "").trim().toLowerCase()
-    if (nextRole === "staff" || nextRole === "driver") {
+    if (nextRole === "staff" || nextRole === "driver" || nextRole === "admin") {
       logout()
       clearAllSessions()
       acceptStaffSession({ ...loginResult.user, role: nextRole }, loginResult.token)
-      redirectTo("/staff/dashboard")
+      redirectTo(nextRole === "admin" ? "/admin/dashboard" : "/staff/dashboard")
       return
     }
 

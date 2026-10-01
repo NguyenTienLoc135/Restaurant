@@ -27,6 +27,12 @@
 @REM   MVNW_VERBOSE - true: enable verbose log; others: silence the output
 @REM ----------------------------------------------------------------------------
 
+@REM Always prefer the local JDK 21 installation for this project on Windows.
+@IF EXIST "C:\Program Files\Java\jdk-21\bin\java.exe" (
+  @SET "JAVA_HOME=C:\Program Files\Java\jdk-21"
+  @SET "PATH=%JAVA_HOME%\bin;%PATH%"
+)
+
 @IF "%__MVNW_ARG0_NAME__%"=="" (SET __MVNW_ARG0_NAME__=%~nx0)
 @SET __MVNW_CMD__=
 @SET __MVNW_ERROR__=

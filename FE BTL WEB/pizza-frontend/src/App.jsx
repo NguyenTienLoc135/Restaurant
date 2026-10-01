@@ -21,12 +21,14 @@ import Login from "./pages/account/Login"
 import Profile from "./pages/account/Profile"
 
 import StaffLayout from "./staff/StaffLayout"
+import AdminLayout from "./admin/AdminLayout"
 
 function Layout() {
   const location = useLocation()
   const hideNavbar =
     ["/booking-confirm", "/login"].includes(location.pathname) ||
-    location.pathname.startsWith("/staff")
+    location.pathname.startsWith("/staff") ||
+    location.pathname.startsWith("/admin")
 
   return (
     <>
@@ -49,6 +51,8 @@ function Layout() {
         <Route path="/staff/login" element={<Navigate to="/login" replace />} />
         <Route path="/staff/dashboard" element={<StaffLayout />} />
         <Route path="/staff" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/dashboard" element={<AdminLayout />} />
+        <Route path="/admin" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
   )

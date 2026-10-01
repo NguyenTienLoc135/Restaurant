@@ -9,6 +9,12 @@ const HISTORY_VIEW_OPTIONS = [
   { value: "bookings", label: "Lịch sử đặt bàn" },
 ]
 
+const STATUS_FILTERS = [
+  { value: "all", label: "Tất cả" },
+  { value: "ACTIVE", label: "Đang hoạt động" },
+  { value: "INACTIVE", label: "Không hoạt động" },
+]
+
 const EMPTY_HISTORY_FILTERS = {
   fromDateTime: "",
   toDateTime: "",
@@ -440,6 +446,7 @@ export default function StaffCustomerManager() {
   const [selectedHistory, setSelectedHistory] = useState(null)
   const [historyFilters, setHistoryFilters] = useState(EMPTY_HISTORY_FILTERS)
   const [historyCache, setHistoryCache] = useState({})
+  const [statusFilter, setStatusFilter] = useState("all")
   const hoverCloseTimeoutRef = useRef(null)
   const historyCacheRef = useRef({})
 
@@ -650,30 +657,33 @@ export default function StaffCustomerManager() {
 
   const filteredCustomers = useMemo(() => {
     const normalizedSearch = normalizeLookupValue(search)
-    if (!normalizedSearch) return customers
 
-    return customers.filter(customer =>
-      [
-        customer.id,
-        customer.name,
-        customer.email,
-        customer.phone,
-        customer.address,
-        customer.userRole,
-        customer.status,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch)
-    )
-  }, [customers, search])
+    return customers.filter(customer => {
+      const matchesStatus = statusFilter === "all" || customer.status === statusFilter
+      const matchesKeyword =
+        !normalizedSearch ||
+        [
+          customer.id,
+          customer.name,
+          customer.email,
+          customer.phone,
+          customer.address,
+          customer.userRole,
+          customer.status,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch)
+
+      return matchesStatus && matchesKeyword
+    })
+  }, [customers, search, statusFilter])
 
   const stats = useMemo(
     () => ({
       total: customers.length,
       active: customers.filter(customer => customer.status === "ACTIVE").length,
       inactive: customers.filter(customer => customer.status === "INACTIVE").length,
-      withEmail: customers.filter(customer => customer.email).length,
     }),
     [customers]
   )
@@ -686,10 +696,9 @@ export default function StaffCustomerManager() {
         </div>
       </div>
 
-      <div className="sm-stats">
-        {[["👥", stats.total, "Tổng khách"], ["🟢", stats.active, "Đang hoạt động"], ["🔒", stats.inactive, "Đang khóa"], ["✉️", stats.withEmail, "Có email"]].map(([icon, value, label]) => (
+      <div className="sm-stats sm-account-stats">
+        {[[stats.total, "Tổng khách"], [stats.active, "Đang hoạt động"], [stats.inactive, "Không hoạt động"]].map(([value, label]) => (
           <div key={label} className="sm-stat-card">
-            <span className="sm-stat-icon">{icon}</span>
             <div>
               <p className="sm-stat-val">{value}</p>
               <p className="sm-stat-label">{label}</p>
@@ -705,7 +714,22 @@ export default function StaffCustomerManager() {
           value={search}
           onChange={event => setSearch(event.target.value)}
         />
-        <button className="sm-btn outline" onClick={() => setSearch("")}>
+        <div className="sm-filter-tabs">
+          {STATUS_FILTERS.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              className={`sm-filter-tab ${statusFilter === option.value ? "active" : ""}`}
+              onClick={() => setStatusFilter(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <button className="sm-btn outline" onClick={() => {
+          setSearch("")
+          setStatusFilter("all")
+        }}>
           Bỏ lọc
         </button>
       </div>

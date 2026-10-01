@@ -59,7 +59,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     @Override
     public String insertItem(ItemRequest itemRequest){
         Item itemEntity = new Item();
@@ -83,7 +83,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     @Override
     public String updateItem(Integer id, ItemRequest itemRequest){
         Item itemEntity = itemRepository.findById(id).orElseThrow();
@@ -107,7 +107,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     @Override
     public String deleteItem(Integer id){
         Item itemEntity = itemRepository.findById(id).orElseThrow();

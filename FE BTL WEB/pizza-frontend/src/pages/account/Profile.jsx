@@ -6,6 +6,25 @@ import { normalizeUserResponse } from "../../services/responseAdapters"
 import { useStaff } from "../../staff/StaffContext"
 import "./Profile.css"
 
+function getInternalRole(account) {
+  const normalized = String(account?.role || account?.userRole || "").trim().toLowerCase()
+  if (normalized === "admin" || normalized === "staff" || normalized === "driver") {
+    return normalized
+  }
+  return ""
+}
+
+function getInternalRoleFromTokens() {
+  const staffToken = localStorage.getItem("hs_staff_token")
+  const userToken = localStorage.getItem("hs_user_token")
+  const payload = decodeJwtToken(staffToken || userToken)
+  const normalized = String(payload?.role || payload?.userRole || "").trim().toLowerCase()
+  if (normalized === "admin" || normalized === "staff" || normalized === "driver") {
+    return normalized
+  }
+  return ""
+}
+
 const TABS = [
   { key: "info",     icon: "🗿", label: "Thông tin" },
   { key: "password", icon: "🔒", label: "Đổi mật khẩu" },
@@ -195,6 +214,7 @@ export default function Profile() {
   const storedUser    = readStoredUser()
   const resolvedToken = auth.token || storedToken
   const resolvedUser  = auth.user || storedUser || buildUserFromToken(resolvedToken)
+  const internalRole = staff?.role || getInternalRole(resolvedUser) || getInternalRoleFromTokens()
 
   const [activeTab,      setActiveTab]      = useState("info")
   const [info,           setInfo]           = useState({
@@ -216,7 +236,7 @@ export default function Profile() {
   const [bookingCancelSuccess, setBookingCancelSuccess] = useState("")
   const [bookingCancelSubmitting, setBookingCancelSubmitting] = useState(false)
 
-  if (staff) return <Navigate to="/staff/dashboard" replace />
+  if (internalRole) return <Navigate to={internalRole === "admin" ? "/admin/dashboard" : "/staff/dashboard"} replace />
   if (resolvedToken && !isJwtTokenExpired(resolvedToken) && !resolvedUser) return null
   if (!resolvedUser) return <Navigate to="/login" replace />
 

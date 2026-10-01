@@ -40,7 +40,12 @@ export default function StaffLayout() {
   const [sideOpen, setSideOpen] = useState(false)
 
   if (!staff) {
-    navigate("/staff/login")
+    navigate("/login")
+    return null
+  }
+
+  if (staff.role === "admin") {
+    navigate("/admin/dashboard")
     return null
   }
 
@@ -48,7 +53,7 @@ export default function StaffLayout() {
 
   function handleLogout() {
     staffLogout()
-    navigate("/staff/login")
+    navigate("/login")
   }
 
   function openTab(nextTab) {

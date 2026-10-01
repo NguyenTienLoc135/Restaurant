@@ -12,26 +12,26 @@ import java.util.Map;
 
 public interface OrderService {
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     List<OrderResponse> findOrders(Map<String, Object> params);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     List<OrderResponse> findMyOrders();
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER','ROLE_ADMIN')")
     List<OrderDetailResponse> orderDetail(Integer id);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     String updateOrderStatus(Integer id, OrderStatus status);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     String createMyOrder(OrderRequest request);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     String deleteMyOrder(Integer id);
 }

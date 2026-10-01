@@ -34,14 +34,14 @@ public class ReservationServiceImpl implements ReservationService {
 
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     @Override
     public List<BookingResponse> getRerservationList(Map<String, Object> params){
         BookingSearchBuilder bookingSearchBuilder = searchBuilderConverter.toBookingSearchBuilder(params);
         var bookingSpecs = BookingSpecs.filterByDate(bookingSearchBuilder);
         List<Booking> list = bookingRepository.findAll(bookingSpecs);
         if(list.isEmpty()){
-            throw new DataNotFoundException("not found");
+            throw new DataNotFoundException("không có đơn đặt bàn");
         }
         List<BookingResponse> result = new ArrayList<>() ;
         for(Booking booking : list){
@@ -55,7 +55,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER','ROLE_ADMIN')")// thay đổi trạng thái
     public String updateReservation(Integer id, BookingStatus bookingStatus){
        Booking booking = bookingRepository.getOne(id);
        booking.setStatus(bookingStatus);
@@ -63,7 +63,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     @Override
     public List<BookingResponse> myReservationHistory(){
         Integer userId = currentUserProvider.getCurrentUserId()
@@ -83,7 +83,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     @Override
     public String createBooking(BookingRequest bookingRequest){
         Integer userId = currentUserProvider.getCurrentUserId()
@@ -109,7 +109,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     @Override
     public String cancelBooking(Integer id){
         Booking booking = bookingRepository.findById(id).

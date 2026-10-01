@@ -56,7 +56,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_DRIVER','ROLE_ADMIN')")
     public List<OrderResponse> getDeliveryOrders() {
         List<Order> orders = orderRepository.findAll();
         List<OrderResponse> results = new ArrayList<>();
@@ -74,7 +74,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_DRIVER','ROLE_ADMIN')")
     public List<OrderResponse> DeliveryingOrders() {
         Integer userId = getCurrentDriverId();
         List<Order> orders = orderRepository.findAll();
@@ -92,7 +92,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_DRIVER','ROLE_ADMIN')")
     public List<OrderResponse> DeliveriedOrders() {
         Integer userId = getCurrentDriverId();
         List<Order> orders = orderRepository.findAll();
@@ -111,7 +111,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_DRIVER','ROLE_ADMIN')")
     public String claimOrder(Integer orderId) {
         Integer userId = getCurrentDriverId();
         Order order = orderRepository.findById(orderId)
@@ -133,7 +133,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_DRIVER','ROLE_ADMIN')")
     public String DeliveryUpdate(Integer orderId, OrderStatus status) {
         Integer userId = getCurrentDriverId();
         Order order = orderRepository.findById(orderId)

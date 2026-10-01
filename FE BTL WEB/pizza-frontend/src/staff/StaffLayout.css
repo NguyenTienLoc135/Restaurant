@@ -132,7 +132,21 @@
   position: absolute; left: 0; top: 20%; height: 60%;
   width: 3px; background: var(--s-gold); border-radius: 0 2px 2px 0;
 }
-.sdl-nav-icon { font-size: 18px; width: 22px; text-align: center; }
+.sdl-nav-icon {
+  width: 62px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--s-blue);
+  text-align: left;
+  line-height: 1.2;
+}
+.sdl-nav-label {
+  min-width: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
 
 .sdl-sidebar-footer { padding: 16px; border-top: 1px solid var(--s-border); }
 .sdl-goto-user {
@@ -421,12 +435,13 @@
 /* STATS ROW */
 .sm-stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
 .sm-stat-card {
   background: white; border: 1px solid var(--s-border);
+  min-height: 92px;
   padding: 20px 22px; display: flex; align-items: center; gap: 14px;
 }
 .sm-stat-icon { font-size: 28px; }
@@ -435,6 +450,10 @@
   font-size: 32px; font-weight: 400; color: var(--s-navy); line-height: 1;
 }
 .sm-stat-label { font-size: 12px; color: var(--s-muted); font-weight: 400; margin-top: 2px; }
+
+.sm-account-stats .sm-stat-icon {
+  display: none;
+}
 
 /* responsive */
 @media (max-width: 900px) {

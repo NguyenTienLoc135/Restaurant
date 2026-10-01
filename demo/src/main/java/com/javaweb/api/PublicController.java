@@ -28,7 +28,7 @@ public class PublicController {
 
     @PostMapping(value = "/public/register")
     public ResponseEntity<String> register(@RequestBody  @Valid UserRequest userRegisterRequest) {
-        return ResponseEntity.ok(userService.Register(userRegisterRequest));
+        return ResponseEntity.ok(userService.register(userRegisterRequest));
     }
 
     @GetMapping(value ="/public/item") // tìm tât cả các món

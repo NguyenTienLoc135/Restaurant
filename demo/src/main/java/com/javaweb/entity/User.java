@@ -43,15 +43,15 @@ public class User implements UserDetails{
 
     @Column(name="gender")
     @Enumerated(EnumType.STRING)
-    private UserGender UserGender;
+    private UserGender userGender;
 
     @Column(name="role")
     @Enumerated(EnumType.STRING)
-    private UserRole UserRole;
+    private UserRole userRole;
 
     @Column(name="status")
     @Enumerated(EnumType.STRING)
-    private UserIsActive UserIsActive;
+    private UserIsActive userIsActive;
 
     @OneToMany(mappedBy = "customer",fetch = FetchType.LAZY)
     private List<Order> customerOrders;//lịch sử order của user
@@ -64,7 +64,7 @@ public class User implements UserDetails{
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + this.UserRole.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.userRole.name()));
     }
 
 

@@ -4,7 +4,7 @@ const DEFAULT_API_BASE_URL = "http://localhost:8082"
 
 function isStaffRoute() {
   if (typeof window === "undefined") return false
-  return window.location.pathname.startsWith("/staff")
+  return window.location.pathname.startsWith("/staff") || window.location.pathname.startsWith("/admin")
 }
 
 function getStoredToken(requestUrl = "") {
@@ -13,6 +13,7 @@ function getStoredToken(requestUrl = "") {
   const normalizedUrl = String(requestUrl || "")
   const prefersStaffToken =
     isStaffRoute() ||
+    normalizedUrl.startsWith("/admin") ||
     normalizedUrl.startsWith("/staff") ||
     normalizedUrl.startsWith("/delivery") ||
     normalizedUrl === "/orders/" ||

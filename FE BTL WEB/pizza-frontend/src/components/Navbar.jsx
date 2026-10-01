@@ -1,8 +1,28 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { decodeJwtToken } from "../services/jwt"
 import { useStaff } from "../staff/StaffContext"
 import "./Navbar.css"
+
+function getInternalRole(account) {
+  const normalized = String(account?.role || account?.userRole || "").trim().toLowerCase()
+  if (normalized === "admin" || normalized === "staff" || normalized === "driver") {
+    return normalized
+  }
+  return ""
+}
+
+function getInternalRoleFromTokens() {
+  const staffToken = localStorage.getItem("hs_staff_token")
+  const userToken = localStorage.getItem("hs_user_token")
+  const payload = decodeJwtToken(staffToken || userToken)
+  const normalized = String(payload?.role || payload?.userRole || "").trim().toLowerCase()
+  if (normalized === "admin" || normalized === "staff" || normalized === "driver") {
+    return normalized
+  }
+  return ""
+}
 
 function Navbar() {
   const [open, setOpen] = useState(false)
@@ -15,8 +35,12 @@ function Navbar() {
   const user = auth?.user ?? null
   const staff = staffAuth?.staff ?? null
   const activeAccount = staff || user
-  const logout = staff ? (staffAuth?.staffLogout ?? (() => {})) : (auth?.logout ?? (() => {}))
+  const activeInternalRole = staff?.role || getInternalRole(activeAccount) || getInternalRoleFromTokens()
+  const isInternalAccount = !!activeInternalRole
+  const logout = isInternalAccount ? (staff ? (staffAuth?.staffLogout ?? (() => {})) : (auth?.logout ?? (() => {}))) : (auth?.logout ?? (() => {}))
   const dropdownRef = useRef(null)
+  const internalDashboardPath = activeInternalRole === "admin" ? "/admin/dashboard" : "/staff/dashboard"
+  const internalDashboardLabel = activeInternalRole === "admin" ? "Trang admin" : "Trang staff"
 
   const lightPages = ["/menu", "/about", "/vision", "/careers", "/library", "/order", "/cart", "/checkout", "/login", "/profile"]
   const isLight = lightPages.some(page => location.pathname.startsWith(page))
@@ -57,8 +81,8 @@ function Navbar() {
     navigate("/")
   }
 
-  const dropdownItems = staff
-    ? [{ icon: "Admin", label: "Trang staff", path: "/staff/dashboard" }]
+  const dropdownItems = isInternalAccount
+    ? [{ icon: "Admin", label: internalDashboardLabel, path: internalDashboardPath }]
     : [
         { icon: "👨‍🍳", label: "Tài khoản", path: "/profile" },
         { icon: "📝", label: "Đơn hàng của tôi", path: "/profile?tab=orders" },
@@ -183,7 +207,7 @@ function Navbar() {
 
             {[
               activeAccount
-                ? [staff ? "Trang staff" : "Tai khoan cua toi", staff ? "/staff/dashboard" : "/profile"]
+                ? [isInternalAccount ? internalDashboardLabel : "Tai khoan cua toi", isInternalAccount ? internalDashboardPath : "/profile"]
                 : ["Dang nhap / Dang ky", "/login"],
               ["Ho so cong ty", "/company"],
               ["Chinh sach bao mat", "/privacy"],

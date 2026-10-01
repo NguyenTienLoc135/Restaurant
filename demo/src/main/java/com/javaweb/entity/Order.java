@@ -35,7 +35,7 @@ public class Order {
     @Column(name="delivery_fee")
     private BigDecimal deliveryFee;
 
-    @Column(name = "status")
+    @Column(name = "order_status")
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 

@@ -14,21 +14,21 @@ import java.util.Map;
 public interface ReservationService {
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     List<BookingResponse> getRerservationList(Map<String, Object> params);
 
     @Transactional
     String updateReservation(Integer id, BookingStatus bookingStatus);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     List<BookingResponse> myReservationHistory();
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     public String createBooking(BookingRequest bookingRequest);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     public String cancelBooking(Integer id);
 }

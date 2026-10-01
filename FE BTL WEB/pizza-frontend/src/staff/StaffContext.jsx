@@ -33,6 +33,7 @@ function clearUserSessionShadow() {
 
 function normalizeStaffRole(role, fallbackRole = "staff") {
   const normalized = String(role || fallbackRole || "staff").trim().toUpperCase()
+  if (normalized === "ADMIN") return "admin"
   return normalized === "DRIVER" ? "driver" : "staff"
 }
 
@@ -98,9 +99,9 @@ export function StaffProvider({ children }) {
       const nextStaff = await fetchCurrentStaff("staff", nextToken)
       const nextRole = normalizeStaffRole(nextStaff?.userRole || nextStaff?.role)
 
-      if (nextRole !== "staff" && nextRole !== "driver") {
+      if (nextRole !== "staff" && nextRole !== "driver" && nextRole !== "admin") {
         clearStaffSessionStorage()
-        return { ok: false, message: "Tài khoản này không có quyền staff." }
+        return { ok: false, message: "Tài khoản này không có quyền nội bộ." }
       }
 
       const safeStaff = syncStaffSession({ ...nextStaff, role: nextRole }, nextToken)

@@ -79,7 +79,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     public List<OrderResponse> findOrders(Map<String, Object> params) {
         OrderSearchBuilder orderSearchBuilder = searchBuilderConverter.toOrderSearchBuilder(params);
         var orderSpecs = OrderSpecs.byOrderBuilder(orderSearchBuilder);
@@ -96,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     @Override
     public List<OrderResponse> findMyOrders(){
         Integer userId = currentUserProvider.getCurrentUserId()
@@ -111,7 +111,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_CUSTOMER','ROLE_ADMIN')")
     @Override
     public List<OrderDetailResponse> orderDetail(Integer id){
         Order order = orderRepository.findById(id).orElseThrow();
@@ -121,7 +121,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     public String updateOrderStatus(Integer id, OrderStatus status) {
         Order e = orderRepository.findById(id).orElseThrow();
         e.setStatus(status);
@@ -131,7 +131,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     public String createMyOrder(OrderRequest request) {
         Integer userId = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
@@ -163,7 +163,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
     public String deleteMyOrder(Integer id) {
         Integer userId = currentUserProvider.getCurrentUserId()
                 .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Unauthenticated"));
@@ -172,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(userId)) {
             throw new AccessDeniedException("Forbidden");
         }
-        if (order.getStatus() != OrderStatus.PENDING){
+        if (order.getStatus() != OrderStatus.PENDING || order.getStatus()!=null){
             throw new IllegalArgumentException("Don hang da duoc xu ly, khong the huy");
         }
         order.setStatus(OrderStatus.CANCELLED);

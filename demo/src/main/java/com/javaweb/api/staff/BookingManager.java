@@ -16,10 +16,12 @@ import java.util.Map;
 public class BookingManager {
     private final ReservationService reservationService;
 
+    // lâ danh sách đặt bàn
     @GetMapping(value ="/staff/reservations")
     public List<BookingResponse> revervationList(@RequestParam Map<String, Object> params) {
         return  reservationService.getRerservationList(params);
     }
+
 
     @PutMapping(value="/reservation/{id}")
     public ResponseEntity<String> changeReservation(@PathVariable Integer id, BookingStatus bookingStatus) {

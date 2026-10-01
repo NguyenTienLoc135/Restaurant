@@ -14,23 +14,36 @@ public interface UserService {
     @Transactional
     String login(UserLoginRequest userLoginRequest);
 
-    @Transactional
-    String Register(UserRequest userRegisterRequest);
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    String register(UserRequest userRegisterRequest);
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    String registerStaff(UserRequest userRegisterRequest);
+
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     List<UserResponse> findAll();
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_STAFF')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    List<UserResponse> findAllStaff();
+
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    List<UserResponse> findAllDriver();
+
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF','ROLE_ADMIN')")
     String banUser(Integer id, UserIsActive userIsActive);
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER','ROLE_ADMIN')")
     UserResponse showInfo();
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_STAFF','ROLE_DRIVER','ROLE_ADMIN')")
     String updateMyInfo(UserUpdateRequest req);
 
 

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -34,12 +35,14 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
-                        .requestMatchers("/staff/**").hasAuthority("ROLE_STAFF")
-                        .requestMatchers("/orders/**").hasAnyAuthority("ROLE_STAFF", "ROLE_CUSTOMER")
-                        .requestMatchers("/reservation/**").hasAnyAuthority("ROLE_STAFF", "ROLE_CUSTOMER")
-                        .requestMatchers("/user/**").hasAuthority("ROLE_CUSTOMER")
-                        .requestMatchers("/delivery/**").hasAuthority("ROLE_DRIVER")
-                        .requestMatchers("/info/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_STAFF", "ROLE_DRIVER")
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/staff/users/**").hasAnyAuthority("ROLE_STAFF", "ROLE_ADMIN")
+                        .requestMatchers("/staff/**").hasAnyAuthority("ROLE_STAFF", "ROLE_ADMIN")
+                        .requestMatchers("/orders/**").hasAnyAuthority("ROLE_STAFF", "ROLE_CUSTOMER", "ROLE_ADMIN")
+                        .requestMatchers("/reservation/**").hasAnyAuthority("ROLE_STAFF", "ROLE_CUSTOMER", "ROLE_ADMIN")
+                        .requestMatchers("/user/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_ADMIN")
+                        .requestMatchers("/delivery/**").hasAnyAuthority("ROLE_DRIVER", "ROLE_ADMIN")
+                        .requestMatchers("/info/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_STAFF", "ROLE_DRIVER", "ROLE_ADMIN")
                         .anyRequest().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
